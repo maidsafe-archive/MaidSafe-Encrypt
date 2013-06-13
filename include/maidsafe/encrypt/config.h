@@ -18,10 +18,11 @@
 
 
 namespace maidsafe {
+
 namespace encrypt {
 
 const uint32_t kMinChunkSize(1024);  // bytes
-const uint32_t kDefaultChunkSize(1024 * 256);  // bytes
+const uint32_t kDefaultChunkSize(1024 * 1024);  // bytes
 
 enum ReturnCode {
   kSuccess = 0,
@@ -40,6 +41,7 @@ enum ReturnCode {
 };
 
 }  // namespace encrypt
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ENCRYPT_CONFIG_H_

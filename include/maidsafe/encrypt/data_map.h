@@ -54,8 +54,7 @@ struct DataMap {
     if (!this)
       return false;
 
-    if ((content != other.content) ||
-        (chunks.size() != other.chunks.size()))
+    if (content != other.content || chunks.size() != other.chunks.size())
       return false;
 
     for (uint32_t i = 0; i < chunks.size(); ++i)
@@ -65,9 +64,7 @@ struct DataMap {
     return true;
   }
 
-  bool operator!=(const DataMap &other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const DataMap &other) const { return !(*this == other); }
 
   std::vector<ChunkDetails> chunks;
   std::string content;  // Whole data item, if small enough
@@ -75,8 +72,8 @@ struct DataMap {
 
 typedef std::shared_ptr<DataMap> DataMapPtr;
 
-int SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map);
-int ParseDataMap(const std::string& serialised_data_map, DataMap& data_map);
+void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map);
+void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map);
 
 /*
 // Hold datamaps in a version container

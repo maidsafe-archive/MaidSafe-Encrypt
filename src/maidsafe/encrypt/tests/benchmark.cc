@@ -11,13 +11,12 @@
 *  the explicit written permission of the board of directors of MaidSafe.net.  *
 *******************************************************************************/
 
-#include "boost/date_time/posix_time/posix_time.hpp"
+#include <chrono>
+
+#include "boost/filesystem/operations.hpp"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
-
-
-namespace bptime = boost::posix_time;
 
 namespace maidsafe {
 namespace encrypt {
@@ -26,6 +25,8 @@ namespace test {
 class Benchmark : public EncryptTestBase,
                   public testing::TestWithParam<uint32_t> {
  public:
+  typedef std::chrono::time_point<std::chrono::system_clock> chrono_time_point;
+
   Benchmark() : EncryptTestBase(0),
                 kTestDataSize_(1024 * 1024 * 20),
                 kPieceSize_(GetParam() ? GetParam() : kTestDataSize_) {
@@ -34,11 +35,12 @@ class Benchmark : public EncryptTestBase,
   }
 
  protected:
-  void PrintResult(const bptime::ptime &start_time,
-                   const bptime::ptime &stop_time,
+  void PrintResult(const chrono_time_point& start_time,
+                   const chrono_time_point& stop_time,
                    bool encrypting,
                    bool compressible) {
-    uint64_t duration = (stop_time - start_time).total_microseconds();
+    uint64_t duration =
+      std::chrono::duration_cast<std::chrono::microseconds>(stop_time - start_time).count();
     if (duration == 0)
       duration = 1;
     uint64_t rate((static_cast<uint64_t>(kTestDataSize_) * 1000000) / duration);
@@ -46,7 +48,7 @@ class Benchmark : public EncryptTestBase,
     std::string comp(compressible ? "compressible" : "incompressible");
     std::cout << encrypted << BytesToBinarySiUnits(kTestDataSize_) << " of "
               << comp << " data in " << BytesToBinarySiUnits(kPieceSize_)
-              << " pieces in " << (duration / 1000000.0) << " seconds at a "
+              << " pieces in " << (duration / 1000000) << " seconds at a "
               << "speed of " << BytesToBinarySiUnits(rate) << "/s" << std::endl;
   }
   const uint32_t kTestDataSize_, kPieceSize_;
@@ -62,17 +64,17 @@ TEST_P(Benchmark, FUNC_BenchmarkMemOnly) {
              kTestDataSize_);
     }
 
-    bptime::ptime start_time(bptime::microsec_clock::universal_time());
+    chrono_time_point start_time(std::chrono::system_clock::now());
     for (uint32_t i(0); i < kTestDataSize_; i += kPieceSize_)
       ASSERT_TRUE(self_encryptor_->Write(&original_[i], kPieceSize_, i));
     self_encryptor_->Flush();
-    bptime::ptime stop_time(bptime::microsec_clock::universal_time());
+    chrono_time_point stop_time(std::chrono::system_clock::now());
     PrintResult(start_time, stop_time, true, compressible);
 
-    start_time = bptime::microsec_clock::universal_time();
+    start_time = std::chrono::system_clock::now();
     for (uint32_t i(0); i < kTestDataSize_; i += kPieceSize_)
       ASSERT_TRUE(self_encryptor_->Read(&decrypted_[i], kPieceSize_, i));
-    stop_time = bptime::microsec_clock::universal_time();
+    stop_time = std::chrono::system_clock::now();
     for (uint32_t i(0); i < kTestDataSize_; ++i)
       ASSERT_EQ(original_[i], decrypted_[i]) << "failed @ count " << i;
     PrintResult(start_time, stop_time, false, compressible);
@@ -87,24 +89,13 @@ INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536));
 // monitored.
 TEST(MassiveFile, FUNC_MemCheck) {
   int kNumProcs(8);
-  AsioService asio_service(5);
-  asio_service.Start();
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  fs::path buffered_chunk_store_path(*test_dir / RandomAlphaNumericString(8));
-  LOG(kInfo) << "Creating chunk store in " << buffered_chunk_store_path;
-  RemoteChunkStorePtr remote_chunk_store =
-        priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
-                                                 *test_dir / "local_manager",
-                                                 *test_dir / "chunk_locks",
-                                                 asio_service.service());
-  priv::chunk_store::FileChunkStore file_chunk_store;
-  EXPECT_TRUE(file_chunk_store.Init(*test_dir / "temp"));
+  fs::path data_store_path(*test_dir / "data_store");
+  ClientNfsPtr client_nfs;
+  DataStore data_store(data_store_path, DiskUsage(uint64_t(4294967296)));
 
   DataMapPtr data_map(new DataMap);
-  std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map,
-                  *remote_chunk_store,
-                  file_chunk_store,
-                  kNumProcs));
+  SelfEncryptorPtr self_encryptor(new SelfEncryptor(data_map, *client_nfs, data_store, kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
   boost::scoped_array<char> original(new char[kDataSize]);
@@ -115,19 +106,17 @@ TEST(MassiveFile, FUNC_MemCheck) {
   for (uint64_t offset(0); offset != 200 * kDataSize; offset += kDataSize)
     EXPECT_TRUE(self_encryptor->Write(original.get(), kDataSize, offset));
 
-  asio_service.Stop();
-
   LOG(kInfo) << "Resetting self encryptor.";
   self_encryptor.reset();
   // Sleep to allow chosen memory monitor to update its display.
   Sleep(boost::posix_time::seconds(1));
 
   LOG(kInfo) << "Resetting chunk store.";
-  remote_chunk_store.reset();
+  client_nfs.reset();
   boost::system::error_code rm_error_code, exists_error_code;
-  EXPECT_GT(fs::remove_all(buffered_chunk_store_path, rm_error_code), 0U)
+  EXPECT_GT(fs::remove_all(data_store_path, rm_error_code), 0U)
       << rm_error_code.message();
-  EXPECT_FALSE(fs::exists(buffered_chunk_store_path, exists_error_code))
+  EXPECT_FALSE(fs::exists(data_store_path, exists_error_code))
       << "Remove all failed: " << rm_error_code
       << (exists_error_code ?
           "\nExists error: " + exists_error_code.message() :

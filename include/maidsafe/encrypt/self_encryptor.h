@@ -19,11 +19,8 @@
 #include <string>
 #include <tuple>
 
-#include "boost/thread/shared_mutex.hpp"
-#include "boost/thread/locks.hpp"
-
-#include "maidsafe/private/chunk_store/file_chunk_store.h"
-#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+#include "maidsafe/data_store/permanent_store.h"
+#include "maidsafe/nfs/nfs.h"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
@@ -31,38 +28,32 @@
 
 namespace maidsafe {
 
-namespace priv {
-namespace chunk_store {
-  class RemoteChunkStore;
-  class FileChunkStore;
-}  // namespace chunk_store
-}  // namespace priv
-
 namespace encrypt {
 
 class Sequencer;
 
-asymm::CipherText EncryptDataMap(const Identity& parent_id,
-                                 const Identity& this_id,
-                                 DataMapPtr data_map);
+crypto::CipherText EncryptDataMap(const Identity& parent_id,
+                                  const Identity& this_id,
+                                  DataMapPtr data_map);
 
-int DecryptDataMap(const Identity& parent_id,
-                   const Identity& this_id,
-                   const std::string &encrypted_data_map,
-                   DataMapPtr data_map);
+void DecryptDataMap(const Identity& parent_id,
+                    const Identity& this_id,
+                    const std::string &encrypted_data_map,
+                    DataMapPtr data_map);
 
 class SelfEncryptor {
  public:
+  typedef nfs::ClientMaidNfs ClientNfs;
+  typedef data_store::PermanentStore DataStore;
+
   SelfEncryptor(DataMapPtr data_map,
-                priv::chunk_store::RemoteChunkStore& remote_chunk_store,
-                priv::chunk_store::FileChunkStore& file_chunk_store,
+                ClientNfs& client_nfs,
+                DataStore& data_store,
                 int num_procs = 0);
   ~SelfEncryptor();
-  bool Write(const char *data,
-             const uint32_t &length,
-             const uint64_t &position);
+  bool Write(const char *data, const uint32_t &length, const uint64_t &position);
   bool Read(char *data, const uint32_t &length, const uint64_t &position);
-  bool DeleteAllChunks();
+  void DeleteAllChunks();
   // Can only truncate down in size
   bool Truncate(const uint64_t &position);
   // Forces all buffered data to be encrypted.  Missing portions of the file
@@ -76,11 +67,8 @@ class SelfEncryptor {
   DataMapPtr data_map() const { return data_map_; }
 
  private:
-  typedef boost::shared_lock<boost::shared_mutex> SharedLock;
-  typedef boost::upgrade_lock<boost::shared_mutex> UpgradeLock;
-  typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
-  typedef boost::upgrade_to_unique_lock<boost::shared_mutex>
-      UpgradeToUniqueLock;
+  typedef TaggedValue<Identity, ImmutableDataTag> ImmutableKeyType;
+
   SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   // If prepared_for_writing_ is not already true, this either reads the first 2
@@ -92,18 +80,12 @@ class SelfEncryptor {
   // is beyond the end of the first 2 chunks.
   int PrepareToWrite(const uint32_t &length, const uint64_t &position);
   // Copies any relevant data to read_cache_.
-  void PutToReadCache(const char *data,
-                      const uint32_t &length,
-                      const uint64_t &position);
+  void PutToReadCache(const char *data, const uint32_t &length, const uint64_t &position);
   // Copies any relevant data to read_buffer_.
-  void PutToReadBuffer(const char *data,
-                       const uint32_t &length,
-                       const uint64_t &position);
+  void PutToReadBuffer(const char *data, const uint32_t &length, const uint64_t &position);
   // Copies data to chunk0_raw_ and/or chunk1_raw_.  Returns number of bytes
   // copied.  Updates length and position if data is copied.
-  uint32_t PutToInitialChunks(const char *data,
-                              uint32_t *length,
-                              uint64_t *position);
+  uint32_t PutToInitialChunks(const char *data, uint32_t *length, uint64_t *position);
   // If data for writing overlaps or joins on to the end of main_encrypt_queue_,
   // this returns true and sets the offsets to the required start positions of
   // the data and the main_encrypt_queue_.
@@ -142,9 +124,7 @@ class SelfEncryptor {
   // the front of the queue.
   int ProcessMainQueue();
   // Encrypts the chunk and stores in chunk_store_
-  int EncryptChunk(const uint32_t &chunk_num,
-                   byte *data,
-                   const uint32_t &length);
+  int EncryptChunk(const uint32_t &chunk_num, byte *data, const uint32_t &length);
   // If the calculated pre-hash is different to any existing pre-hash,
   // modified is set to true.  In this case, chunks n+1 and n+2 have their
   // old_n1_pre_hash and old_n2_pre_hash fields completed if not already done.
@@ -158,19 +138,11 @@ class SelfEncryptor {
   // Buffer will be much larger than Cache, trying to buffer the whole file
   // or the first block with size of defined times of kDefaultByteArraySize_
   // If can't read from buffer, read will try to read from cache or the chunks
-  bool ReadFromBuffer(char *data,
-                      const uint32_t &length,
-                      const uint64_t &position);
+  bool ReadFromBuffer(char *data, const uint32_t &length, const uint64_t &position);
   // Handles reading from populated data_map_ and all the various write buffers.
-  int Transmogrify(char *data,
-                   const uint32_t &length,
-                   const uint64_t &position);
-  int ReadDataMapChunks(char *data,
-                        const uint32_t &length,
-                        const uint64_t &position);
-  void ReadInProcessData(char *data,
-                         const uint32_t &length,
-                         const uint64_t &position);
+  int Transmogrify(char *data, const uint32_t &length, const uint64_t &position);
+  int ReadDataMapChunks(char *data, const uint32_t &length, const uint64_t &position);
+  void ReadInProcessData(char *data, const uint32_t &length, const uint64_t &position);
   bool TruncateUp(const uint64_t &position);
   bool AppendNulls(const uint64_t &position);
   bool TruncateDown(const uint64_t &position);
@@ -188,8 +160,8 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
-  priv::chunk_store::FileChunkStore& file_chunk_store_;
+  ClientNfs& client_nfs_;
+  DataStore& data_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
   std::unique_ptr<char[]> read_cache_;
@@ -200,7 +172,7 @@ class SelfEncryptor {
   uint32_t buffer_length_;
   uint64_t last_read_position_;
   const uint32_t kMaxBufferSize_;
-  boost::shared_mutex data_mutex_, chunk_store_mutex_;
+  std::mutex data_mutex_, chunk_store_mutex_;
 };
 
 }  // namespace encrypt
