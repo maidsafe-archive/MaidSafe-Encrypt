@@ -21,6 +21,10 @@
 #include <vector>
 #include <utility>
 
+#ifdef MAIDSAFE_OMP_ENABLED
+#  include <omp.h>
+#endif
+
 #ifdef __MSVC__
 #  pragma warning(push, 1)
 #endif
