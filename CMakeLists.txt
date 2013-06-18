@@ -19,7 +19,6 @@ cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 project(encrypt)
 
 include(../../cmake_modules/standard_setup.cmake)
-include(../../cmake_modules/maidsafe_find_openmp.cmake)
 
 include_directories(${common_SOURCE_DIR}/include)
 include_directories(${private_SOURCE_DIR}/include)
@@ -67,12 +66,6 @@ rename_outdated_built_exes()
 # Set compiler and linker flags                                                                    #
 #==================================================================================================#
 include(standard_flags)
-
-# Enable OpenMP if available
-if(OPENMP_FOUND)
-  add_definitions(-DMAIDSAFE_OMP_ENABLED)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
 
 if(UNIX AND NOT APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
