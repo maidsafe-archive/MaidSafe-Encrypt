@@ -13,6 +13,10 @@
 
 #include "maidsafe/encrypt/self_encryptor.h"
 
+#ifdef MAIDSAFE_OMP_ENABLED
+#  include <omp.h>
+#endif
+
 #include <thread>
 #include <tuple>
 #include <algorithm>
@@ -20,10 +24,6 @@
 #include <set>
 #include <vector>
 #include <utility>
-
-#ifdef MAIDSAFE_OMP_ENABLED
-#  include <omp.h>
-#endif
 
 #ifdef __MSVC__
 #  pragma warning(push, 1)
@@ -1023,8 +1023,6 @@ bool SelfEncryptor::Flush() {
   flushed_ = true;
   return true;
 }
-
-bool SelfEncryptor::CanStore() { return flushed_ || !prepared_for_writing_; }
 
 bool SelfEncryptor::Read(char* data, const uint32_t &length, const uint64_t &position) {
   if (length == 0)

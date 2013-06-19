@@ -26,18 +26,14 @@ const uint32_t kDefaultChunkSize(1024 * 1024);  // bytes
 
 enum ReturnCode {
   kSuccess = 0,
-  kEncryptError = -200001,
-  kDecryptError = -200002,
-  kInvalidChunkIndex = -200003,
-  kFailedToStoreChunk = -200004,
-  kMissingChunk = -200005,
-  kEncryptionException = -200006,
-  kDecryptionException = -200007,
-  kSerialisationError = -200008,
-  kDeserialisationError = -200009,
-  kInvalidPosition = -200010,
-  kSequencerException = -200101,
-  kSequencerAddError = -200102
+  kInvalidChunkIndex = -200001,
+  kFailedToStoreChunk = -200002,
+  kMissingChunk = -200003,
+  kEncryptionException = -200004,
+  kDecryptionException = -200005,
+  kInvalidPosition = -200006,
+  kSequencerException = -200007,
+  kSequencerAddError = -200008
 };
 
 }  // namespace encrypt

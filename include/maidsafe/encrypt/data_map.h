@@ -75,19 +75,6 @@ typedef std::shared_ptr<DataMap> DataMapPtr;
 void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map);
 void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map);
 
-/*
-// Hold datamaps in a version container
-struct VersionedDataMap {
-  VersionedDataMap()
-    : data_map(), user_name(), time_stamp() {}
-  DataMap data_map;
-  std::string user_name;
-  boost::posix_time::time_duration time_stamp;
-};
-
-std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs
-*/
-
 }  // namespace encrypt
 
 }  // namespace maidsafe
