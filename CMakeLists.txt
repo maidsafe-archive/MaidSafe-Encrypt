@@ -37,31 +37,18 @@ include_directories(${nfs_SOURCE_DIR}/include)
 #==================================================================================================#
 # Set up all files as GLOBs                                                                        #
 #==================================================================================================#
-####    CODE    ####
-file(GLOB SOURCE_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.cc")
-file(GLOB HEADER_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.h")
-file(GLOB API_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/encrypt/*.h")
-set(ALL_FILES_ENCRYPT_DIR ${SOURCE_FILES_ENCRYPT_DIR} ${HEADER_FILES_ENCRYPT_DIR} ${API_FILES_ENCRYPT_DIR})
-source_group("Encrypt Source Files" FILES ${SOURCE_FILES_ENCRYPT_DIR})
-source_group("Encrypt Header Files" FILES ${HEADER_FILES_ENCRYPT_DIR})
-source_group("Encrypt API Files" FILES ${API_FILES_ENCRYPT_DIR})
-
-####    TESTS    ####
-file(GLOB SOURCE_FILES_ENCRYPT_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc")
-file(GLOB HEADER_FILES_ENCRYPT_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
-set(ALL_FILES_ENCRYPT_TESTS_DIR ${SOURCE_FILES_ENCRYPT_TESTS_DIR} ${HEADER_FILES_ENCRYPT_TESTS_DIR})
-source_group("Tests Source Files" FILES ${SOURCE_FILES_ENCRYPT_TESTS_DIR})
-source_group("Tests Header Files" FILES ${HEADER_FILES_ENCRYPT_TESTS_DIR})
+glob_dir(Encrypt ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt Encrypt)
+glob_dir(EncryptTests ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests Tests)
 
 
 #==================================================================================================#
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
-ms_add_static_library(encrypt ${ALL_FILES_ENCRYPT_DIR})
+ms_add_static_library(encrypt ${EncryptAllFiles})
 target_link_libraries(maidsafe_encrypt maidsafe_private)
 
 if(MaidsafeTesting)
-  ms_add_executable(TESTencrypt "Tests/Encrypt" ${ALL_FILES_ENCRYPT_TESTS_DIR})
+  ms_add_executable(TESTencrypt "Tests/Encrypt" ${EncryptTestsAllFiles})
   target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs)
 endif()
 
