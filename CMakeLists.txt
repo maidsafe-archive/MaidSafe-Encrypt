@@ -57,11 +57,6 @@ source_group("Tests Header Files" FILES ${HEADER_FILES_ENCRYPT_TESTS_DIR})
 #==================================================================================================#
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
-ms_add_static_library(demo_encrypt ${ALL_FILES_ENCRYPT_DIR})
-target_link_libraries(maidsafe_demo_encrypt maidsafe_private)
-set_target_properties(maidsafe_demo_encrypt PROPERTIES COMPILE_DEFINITIONS "MAIDSAFE_DRIVE_DEMO")
-list(REMOVE_ITEM ALL_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/encrypt/drive_store.h")
-list(REMOVE_ITEM ALL_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/drive_store.cc")
 ms_add_static_library(encrypt ${ALL_FILES_ENCRYPT_DIR})
 target_link_libraries(maidsafe_encrypt maidsafe_private)
 
