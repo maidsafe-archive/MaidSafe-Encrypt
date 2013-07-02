@@ -21,15 +21,20 @@ License.
 #include <string>
 #include <tuple>
 
-#include "maidsafe/data_store/permanent_store.h"
 #include "maidsafe/nfs/nfs.h"
 
+#ifdef MAIDSAFE_DRIVE_DEMO
+ #include "maidsafe/encrypt/drive_store.h"
+ typedef maidsafe::drive_store::DriveStore DataStore;
+#else
+ #include "maidsafe/data_store/permanent_store.h"
+ typedef data_store::PermanentStore DataStore;
+#endif
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 
 
 namespace maidsafe {
-
 namespace encrypt {
 
 class Sequencer;
@@ -46,7 +51,6 @@ void DecryptDataMap(const Identity& parent_id,
 class SelfEncryptor {
  public:
   typedef nfs::ClientMaidNfs ClientNfs;
-  typedef data_store::PermanentStore DataStore;
 
   SelfEncryptor(DataMapPtr data_map,
                 ClientNfs& client_nfs,
