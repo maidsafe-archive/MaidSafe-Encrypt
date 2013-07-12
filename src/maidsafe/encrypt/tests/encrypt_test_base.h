@@ -46,7 +46,8 @@ class EncryptTestBase {
         maid_(maidsafe::passport::Maid::signer_type()),
         routing_(maid_),
         client_nfs_(new nfs::ClientMaidNfs(routing_, maid_)),
-        data_store_(std::make_shared<DataStore>(*test_dir_ / "data_store",
+        data_store_path_(*test_dir_ / "data_store"),
+        data_store_(std::make_shared<DataStore>(data_store_path_,
                                                 DiskUsage(uint64_t(4294967296)))),
         data_map_(std::make_shared<DataMap>()),
         self_encryptor_(std::make_shared<SelfEncryptor>(data_map_,
@@ -63,8 +64,8 @@ class EncryptTestBase {
   passport::Maid maid_;
   routing::Routing routing_;
   ClientNfsPtr client_nfs_;
+  fs::path data_store_path_;
   DataStorePtr data_store_;
-  fs::path file_chunk_store_path_;
   DataMapPtr data_map_;
   SelfEncryptorPtr self_encryptor_;
   boost::scoped_array<char> original_, decrypted_;
