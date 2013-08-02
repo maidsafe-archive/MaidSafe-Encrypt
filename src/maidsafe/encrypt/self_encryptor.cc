@@ -1192,7 +1192,7 @@ int SelfEncryptor::ReadDataMapChunks(char *data, const uint32_t &length, const u
 #ifdef MAIDSAFE_OMP_ENABLED
 #  pragma omp parallel for
 #endif
-  for (int64_t i = first_chunk_index; i <= last_chunk_index; ++i) {
+  for (uint32_t i = first_chunk_index; i <= last_chunk_index; ++i) {
     const uint32_t &this_chunk_size(data_map_->chunks[static_cast<uint32_t>(i)].size);
     if (this_chunk_size != 0) {
       if (i == first_chunk_index) {
