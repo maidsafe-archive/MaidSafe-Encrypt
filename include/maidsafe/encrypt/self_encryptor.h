@@ -71,8 +71,6 @@ class SelfEncryptor {
   DataMapPtr data_map() const { return data_map_; }
 
  private:
-  typedef TaggedValue<Identity, ImmutableDataTag> ImmutableKeyType;
-
   SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   // If prepared_for_writing_ is not already true, this either reads the first 2

@@ -516,7 +516,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   NonEmptyString content;
   {
     std::lock_guard<std::mutex> guard(chunk_store_mutex_);
-    ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
+    ImmutableData::Name key(Identity(data_map_->chunks[chunk_num].hash));
     try {
       content = data_store_.Get(key);
     }
@@ -728,7 +728,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num, byte *data, const uin
 
     std::lock_guard<std::mutex> guard(chunk_store_mutex_);
     data_map_->chunks[chunk_num].storage_state = ChunkDetails::kPending;
-    ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
+    ImmutableData::Name key(Identity(data_map_->chunks[chunk_num].hash));
     try {
       data_store_.Put(key, NonEmptyString(chunk_content));
     }
@@ -1306,7 +1306,7 @@ void SelfEncryptor::DeleteAllChunks() {
   // TODO(Team): Check that this two guards are needed or at least don't clash
   std::lock_guard<std::mutex> chunk_store_guard(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    ImmutableKeyType key(Identity(data_map_->chunks[i].hash));
+    ImmutableData::Name key(Identity(data_map_->chunks[i].hash));
     try {
       data_store_.Delete(key);
     }
@@ -1404,7 +1404,7 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   }*/
 
   std::lock_guard<std::mutex> chunk_guard(chunk_store_mutex_);
-  ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
+  ImmutableData::Name key(Identity(data_map_->chunks[chunk_num].hash));
   try {
     data_store_.Delete(key);
   }
