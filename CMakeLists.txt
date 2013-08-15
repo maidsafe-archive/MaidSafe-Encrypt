@@ -56,7 +56,7 @@ set_target_properties(maidsafe_demo_encrypt PROPERTIES COMPILE_DEFINITIONS "MAID
 
 if(MaidsafeTesting)
   ms_add_executable(TESTencrypt "Tests/Encrypt" ${EncryptTestsAllFiles})
-  target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs)
+  target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client)
 endif()
 
 rename_outdated_built_exes()
