@@ -104,7 +104,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 
 namespace detail {
 
-typedef TaggedValue<Identity, ImmutableData::Tag> ImmutableKey;
+typedef ImmutableData::Name ImmutableKey;
 
 template<typename Storage>
 struct Put {
@@ -191,7 +191,7 @@ class SelfEncryptor {
   DataMapPtr data_map() const { return data_map_; }
 
  private:
-  typedef TaggedValue<Identity, typename ImmutableData::Tag> ImmutableKey;
+  typedef detail::ImmutableKey ImmutableKey;
 
   SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
