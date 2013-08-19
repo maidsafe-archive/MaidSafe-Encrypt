@@ -48,13 +48,12 @@ License.
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/data_store/surefile_store.h"
 #include "maidsafe/data_types/immutable_data.h"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/sequencer.h"
-
-#include "maidsafe/nfs/nfs.h"
 
 
 namespace maidsafe {
@@ -105,57 +104,57 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 
 namespace detail {
 
-typedef TaggedValue<Identity, ImmutableDataTag> ImmutableKeyType;
+typedef TaggedValue<Identity, ImmutableData::Tag> ImmutableKey;
 
 template<typename Storage>
 struct Put {
 
-  void operator()(Storage& storage, const ImmutableKeyType& key, const NonEmptyString& value) {
-    storage.Put(key, value);
+  void operator()(Storage& storage, const ImmutableKey& key, const NonEmptyString& value) {
+    storage.Put<ImmutableData>(ImmutableData(value), passport::PublicPmid::name_type(key), nullptr);
   }
 };
 
 template<>
-struct Put<nfs::ClientMaidNfs> {
-  typedef nfs::ClientMaidNfs ClientNfs;
+struct Put<data_store::SureFileStore> {
+  typedef data_store::SureFileStore Storage;
 
-  void operator()(ClientNfs& storage, const ImmutableKeyType& key, const NonEmptyString& value) {
-    storage.Put<ImmutableData>(ImmutableData(value), passport::PublicPmid::name_type(key), nullptr);
+  void operator()(Storage& storage, const ImmutableKey& key, const NonEmptyString& value) {
+    storage.Put(key, value);
   }
 };
 
 template<typename Storage>
 struct Get {
 
-  NonEmptyString operator()(Storage& storage, const ImmutableKeyType& key) {
-    return storage.Get(key);
+  NonEmptyString operator()(Storage& storage, const ImmutableKey& key) {
+    storage.Get<ImmutableData>(key, nullptr);  // FIXME ...value returned in response_functor
+    return NonEmptyString();
   }
 };
 
 template<>
-struct Get<nfs::ClientMaidNfs> {
-  typedef nfs::ClientMaidNfs ClientNfs;
+struct Get<data_store::SureFileStore> {
+  typedef data_store::SureFileStore Storage;
 
-  NonEmptyString operator()(ClientNfs& storage, const ImmutableKeyType& key) {
-    storage.Get<ImmutableData>(key, nullptr);  // FIXME ...value returned in response_functor
-    return NonEmptyString();
+  NonEmptyString operator()(Storage& storage, const ImmutableKey& key) {
+    return storage.Get(key);
   }
 };
 
 template<typename Storage>
 struct Delete {
 
-  void operator()(Storage& storage, ImmutableKeyType& key) {
-    storage.Delete(key);
+  void operator()(Storage& storage, ImmutableKey& key) {
+    storage.Delete<ImmutableData>(key, nullptr);
   }
 };
 
 template<>
-struct Delete<nfs::ClientMaidNfs> {
-  typedef nfs::ClientMaidNfs ClientNfs;
+struct Delete<data_store::SureFileStore> {
+  typedef data_store::SureFileStore Storage;
 
-  void operator()(ClientNfs& storage, ImmutableKeyType& key) {
-    storage.Delete<ImmutableData>(key, nullptr);
+  void operator()(Storage& storage, ImmutableKey& key) {
+    storage.Delete(key);
   }
 };
 
@@ -192,7 +191,7 @@ class SelfEncryptor {
   DataMapPtr data_map() const { return data_map_; }
 
  private:
-  typedef TaggedValue<Identity, ImmutableDataTag> ImmutableKeyType;
+  typedef TaggedValue<Identity, typename ImmutableData::Tag> ImmutableKey;
 
   SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
@@ -699,7 +698,7 @@ int SelfEncryptor<Storage>::DecryptChunk(const uint32_t &chunk_num, byte *data) 
   NonEmptyString content;
   {
     std::lock_guard<std::mutex> guard(chunk_store_mutex_);
-    ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
+    ImmutableKey key(Identity(data_map_->chunks[chunk_num].hash));
     try {
       content = detail::Get<Storage>()(storage_, key);
     }
@@ -904,7 +903,7 @@ int SelfEncryptor<Storage>::EncryptChunk(const uint32_t &chunk_num, byte *data, 
 
     std::lock_guard<std::mutex> guard(chunk_store_mutex_);
     data_map_->chunks[chunk_num].storage_state = ChunkDetails::kPending;
-    ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
+    ImmutableKey key(Identity(data_map_->chunks[chunk_num].hash));
     try {
       detail::Put<Storage>()(storage_, key, NonEmptyString(chunk_content));
     }
@@ -1487,7 +1486,7 @@ void SelfEncryptor<Storage>::DeleteAllChunks() {
   // TODO(Team): Check that this two guards are needed or at least don't clash
   std::lock_guard<std::mutex> chunk_store_guard(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    ImmutableKeyType key(Identity(data_map_->chunks[i].hash));
+    ImmutableKey key(Identity(data_map_->chunks[i].hash));
     try {
       detail::Delete<Storage>()(storage_, key);
     }
@@ -1588,7 +1587,7 @@ void SelfEncryptor<Storage>::DeleteChunk(const uint32_t &chunk_num) {
   }*/
 
   std::lock_guard<std::mutex> chunk_guard(chunk_store_mutex_);
-  ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
+  ImmutableKey key(Identity(data_map_->chunks[chunk_num].hash));
   try {
     detail::Delete<Storage>()(storage_, key);
   }
