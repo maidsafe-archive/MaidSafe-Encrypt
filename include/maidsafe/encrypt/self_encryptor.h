@@ -110,7 +110,7 @@ template<typename Storage>
 struct Put {
 
   void operator()(Storage& storage, const ImmutableKey& key, const NonEmptyString& value) {
-    storage.Put<ImmutableData>(ImmutableData(value), passport::PublicPmid::name_type(key), nullptr);
+    storage.Put<ImmutableData>(ImmutableData(value), passport::PublicPmid::Name(key), nullptr);
   }
 };
 
