@@ -110,7 +110,7 @@ template<typename Storage>
 struct Put {
 
   void operator()(Storage& storage, const ImmutableKey& key, const NonEmptyString& value) {
-    storage.Put<ImmutableData>(ImmutableData(value), passport::PublicPmid::Name(key), nullptr);
+    storage.Put(ImmutableData(value), passport::PublicPmid::Name(key), nullptr);
   }
 };
 
@@ -127,7 +127,7 @@ template<typename Storage>
 struct Get {
 
   NonEmptyString operator()(Storage& storage, const ImmutableKey& key) {
-    storage.Get<ImmutableData>(key, nullptr);  // FIXME ...value returned in response_functor
+    storage.Get(key, nullptr);  // FIXME ...value returned in response_functor
     return NonEmptyString();
   }
 };
@@ -145,7 +145,7 @@ template<typename Storage>
 struct Delete {
 
   void operator()(Storage& storage, ImmutableKey& key) {
-    storage.Delete<ImmutableData>(key, nullptr);
+    storage.Delete(key, nullptr);
   }
 };
 
