@@ -16,21 +16,20 @@ License.
 #ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <tuple>
-#include <thread>
-#include <tuple>
-#include <algorithm>
-#include <limits>
-#include <set>
-#include <vector>
-#include <utility>
-
 #ifdef MAIDSAFE_OMP_ENABLED
 #  include <omp.h>
 #endif
+
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <set>
+#include <string>
+#include <thread>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #ifdef __MSVC__
 #  pragma warning(push, 1)
@@ -57,9 +56,10 @@ License.
 
 
 namespace maidsafe {
+
 namespace encrypt {
 
-namespace {
+namespace detail {
 
 const size_t kPadSize((3 * crypto::SHA512::DIGESTSIZE) -
                       crypto::AES256_KeySize - crypto::AES256_IVSize);
@@ -100,24 +100,18 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
   const size_t kPadSize_;
 };
 
-}  // unnamed namespace
-
-namespace detail {
-
 typedef ImmutableData::Name ImmutableKey;
 
 template<typename Storage>
 struct Put {
-
   void operator()(Storage& storage, const ImmutableKey& key, const NonEmptyString& value) {
-    storage.Put(ImmutableData(value), passport::PublicPmid::Name(key), nullptr);
+    storage.Put(ImmutableData(key, ImmutableData::serialised_type(value)));
   }
 };
 
 template<>
 struct Put<data_store::SureFileStore> {
   typedef data_store::SureFileStore Storage;
-
   void operator()(Storage& storage, const ImmutableKey& key, const NonEmptyString& value) {
     storage.Put(key, value);
   }
@@ -125,17 +119,14 @@ struct Put<data_store::SureFileStore> {
 
 template<typename Storage>
 struct Get {
-
   NonEmptyString operator()(Storage& storage, const ImmutableKey& key) {
-    storage.Get(key, nullptr);  // FIXME ...value returned in response_functor
-    return NonEmptyString();
+    return storage.Get<ImmutableData>(key).get().data();
   }
 };
 
 template<>
 struct Get<data_store::SureFileStore> {
   typedef data_store::SureFileStore Storage;
-
   NonEmptyString operator()(Storage& storage, const ImmutableKey& key) {
     return storage.Get(key);
   }
@@ -143,16 +134,14 @@ struct Get<data_store::SureFileStore> {
 
 template<typename Storage>
 struct Delete {
-
   void operator()(Storage& storage, ImmutableKey& key) {
-    storage.Delete(key, nullptr);
+    storage.Delete<ImmutableData>(key);
   }
 };
 
 template<>
 struct Delete<data_store::SureFileStore> {
   typedef data_store::SureFileStore Storage;
-
   void operator()(Storage& storage, ImmutableKey& key) {
     storage.Delete(key);
   }
@@ -174,7 +163,6 @@ void DecryptDataMap(const Identity& parent_id,
 template<typename Storage>
 class SelfEncryptor {
  public:
-  
   SelfEncryptor(DataMapPtr data_map, Storage& storage, int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char *data, const uint32_t &length, const uint64_t &position);
@@ -354,7 +342,9 @@ SelfEncryptor<Storage>::~SelfEncryptor() {
 }
 
 template<typename Storage>
-bool SelfEncryptor<Storage>::Write(const char *data, const uint32_t &length, const uint64_t &position) {
+bool SelfEncryptor<Storage>::Write(const char *data,
+                                   const uint32_t &length,
+                                   const uint64_t &position) {
   if (length == 0)
     return true;
 
@@ -691,7 +681,7 @@ int SelfEncryptor<Storage>::DecryptChunk(const uint32_t &chunk_num, byte *data) 
     return kSuccess;
   }
 
-  ByteArray pad(GetNewByteArray(kPadSize));
+  ByteArray pad(GetNewByteArray(detail::kPadSize));
   ByteArray key(GetNewByteArray(crypto::AES256_KeySize));
   ByteArray iv(GetNewByteArray(crypto::AES256_IVSize));
   GetPadIvKey(chunk_num, key, iv, pad, false);
@@ -722,7 +712,7 @@ int SelfEncryptor<Storage>::DecryptChunk(const uint32_t &chunk_num, byte *data) 
     CryptoPP::StringSource filter(
         content.string(),
         true,
-        new XORFilter(new CryptoPP::StreamTransformationFilter(
+        new detail::XORFilter(new CryptoPP::StreamTransformationFilter(
                           decryptor,
                           new CryptoPP::Gunzip(new CryptoPP::MessageQueue)),
                       pad.get()));
@@ -871,11 +861,13 @@ int SelfEncryptor<Storage>::ProcessMainQueue() {
 }
 
 template<typename Storage>
-int SelfEncryptor<Storage>::EncryptChunk(const uint32_t &chunk_num, byte *data, const uint32_t &length) {
+int SelfEncryptor<Storage>::EncryptChunk(const uint32_t &chunk_num,
+                                         byte *data,
+                                         const uint32_t &length) {
   assert(data_map_->chunks.size() > chunk_num);
   data_map_->chunks[chunk_num].hash.resize(crypto::SHA512::DIGESTSIZE);
 
-  ByteArray pad(GetNewByteArray(kPadSize));
+  ByteArray pad(GetNewByteArray(detail::kPadSize));
   ByteArray key(GetNewByteArray(crypto::AES256_KeySize));
   ByteArray iv(GetNewByteArray(crypto::AES256_IVSize));
   GetPadIvKey(chunk_num, key, iv, pad, true);
@@ -890,7 +882,7 @@ int SelfEncryptor<Storage>::EncryptChunk(const uint32_t &chunk_num, byte *data, 
     CryptoPP::Gzip aes_filter(
         new CryptoPP::StreamTransformationFilter(
             encryptor,
-            new XORFilter(new CryptoPP::StringSink(chunk_content), pad.get())),
+            new detail::XORFilter(new CryptoPP::StringSink(chunk_content), pad.get())),
         6);
     aes_filter.Put2(data, length, -1, true);
 
@@ -1237,7 +1229,9 @@ bool SelfEncryptor<Storage>::Read(char* data, const uint32_t &length, const uint
 }
 
 template<typename Storage>
-bool SelfEncryptor<Storage>::ReadFromBuffer(char *data, const uint32_t &length, const uint64_t &position) {
+bool SelfEncryptor<Storage>::ReadFromBuffer(char *data,
+                                            const uint32_t &length,
+                                            const uint64_t &position) {
   if (!buffer_activated_) {
     uint64_t diff((position > last_read_position_) ? (position - last_read_position_) :
                                                      (last_read_position_ - position));
@@ -1286,7 +1280,9 @@ void SelfEncryptor<Storage>::PrepareToRead() {
 }
 
 template<typename Storage>
-int SelfEncryptor<Storage>::Transmogrify(char *data, const uint32_t &length, const uint64_t &position) {
+int SelfEncryptor<Storage>::Transmogrify(char *data,
+                                         const uint32_t &length,
+                                         const uint64_t &position) {
   memset(data, 0, length);
 
   // For tiny files, all data is in data_map_->content or chunk0_raw_.
@@ -1323,7 +1319,9 @@ int SelfEncryptor<Storage>::Transmogrify(char *data, const uint32_t &length, con
 }
 
 template<typename Storage>
-int SelfEncryptor<Storage>::ReadDataMapChunks(char *data, const uint32_t &length, const uint64_t &position) {
+int SelfEncryptor<Storage>::ReadDataMapChunks(char *data,
+                                              const uint32_t &length,
+                                              const uint64_t &position) {
   if (data_map_->chunks.empty() || position >= file_size_)
     return kSuccess;
 

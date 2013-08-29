@@ -30,7 +30,7 @@ void DebugPrint(bool encrypting,
                 uint32_t plain_data_length,
                 const std::string &encrypted_data) {
   std::string pad_str(Base32Substr(std::string(
-      reinterpret_cast<char*>(pad.get()), kPadSize)));
+      reinterpret_cast<char*>(pad.get()), detail::kPadSize)));
   std::string key_str(Base32Substr(std::string(
       reinterpret_cast<char*>(key.get()), crypto::AES256_KeySize)));
   std::string iv_str(Base32Substr(std::string(
@@ -82,7 +82,7 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id,
   encrypted_data_map.reserve(copied);
   CryptoPP::Gzip aes_filter(
       new CryptoPP::StreamTransformationFilter(encryptor,
-          new XORFilter(
+          new detail::XORFilter(
               new CryptoPP::StringSink(encrypted_data_map),
               xor_hash.get(),
               crypto::SHA512::DIGESTSIZE)),
@@ -121,7 +121,7 @@ void DecryptDataMap(const Identity& parent_id,
       enc_hash.get() + crypto::AES256_KeySize);
 
   CryptoPP::StringSource filter(encrypted_data_map, true,
-      new XORFilter(
+      new detail::XORFilter(
           new CryptoPP::StreamTransformationFilter(
               decryptor,
               new CryptoPP::Gunzip(new CryptoPP::StringSink(serialised_data_map))),
