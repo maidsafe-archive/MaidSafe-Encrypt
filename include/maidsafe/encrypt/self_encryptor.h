@@ -642,7 +642,7 @@ int SelfEncryptor<Storage>::DecryptChunk(const uint32_t &chunk_num, byte *data) 
     std::lock_guard<std::mutex> guard(chunk_store_mutex_);
     ImmutableData::Name name(Identity(data_map_->chunks[chunk_num].hash));
     try {
-      content = storage_.Get<ImmutableData>(name).get().data();
+      content = storage_.template Get<ImmutableData>(name).get().data();
     }
     catch(...) {
       LOG(kError) << "Failed to get local data for "
@@ -1439,7 +1439,7 @@ void SelfEncryptor<Storage>::DeleteAllChunks() {
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
     ImmutableData::Name name(Identity(data_map_->chunks[i].hash));
     try {
-      storage_.Delete<ImmutableData>(name);
+      storage_.template Delete<ImmutableData>(name);
     }
     catch(...) {}
   }
@@ -1540,7 +1540,7 @@ void SelfEncryptor<Storage>::DeleteChunk(const uint32_t &chunk_num) {
   std::lock_guard<std::mutex> chunk_guard(chunk_store_mutex_);
   ImmutableData::Name name(Identity(data_map_->chunks[chunk_num].hash));
   try {
-    storage_.Delete<ImmutableData>(name);
+    storage_.template Delete<ImmutableData>(name);
   }
   catch(...) {}
 }
