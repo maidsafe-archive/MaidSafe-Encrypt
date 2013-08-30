@@ -47,7 +47,7 @@ License.
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/data_store/surefile_store.h"
+#include "maidsafe/data_store/sure_file_store.h"
 #include "maidsafe/data_types/immutable_data.h"
 
 #include "maidsafe/encrypt/config.h"

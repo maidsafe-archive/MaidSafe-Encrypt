@@ -111,7 +111,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
   LOG(kInfo) << "Resetting self encryptor.";
   self_encryptor.reset();
   // Sleep to allow chosen memory monitor to update its display.
-  Sleep(boost::posix_time::seconds(1));
+  Sleep(std::chrono::seconds(1));
 
   LOG(kInfo) << "Resetting chunk store.";
   client_nfs.reset();
@@ -124,7 +124,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
           "\nExists error: " + exists_error_code.message() :
           "");
   // Sleep to allow chosen memory monitor to update its display.
-  Sleep(boost::posix_time::seconds(3));
+  Sleep(std::chrono::seconds(3));
 }
 
 }  // namespace test

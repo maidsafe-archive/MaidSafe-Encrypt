@@ -49,8 +49,8 @@ void DebugPrint(bool encrypting,
 }  // unnamed namespace
 
 crypto::CipherText EncryptDataMap(const Identity& parent_id,
-                                 const Identity& this_id,
-                                 DataMapPtr data_map) {
+                                  const Identity& this_id,
+                                  DataMapPtr data_map) {
   assert(parent_id.string().size() == static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   assert(this_id.string().size() == static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   assert(data_map);
@@ -90,6 +90,7 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id,
   aes_filter.Put2(array_data_map.get(), copied, -1, true);
 
   assert(!encrypted_data_map.empty());
+
   return crypto::CipherText(encrypted_data_map);
 }
 
