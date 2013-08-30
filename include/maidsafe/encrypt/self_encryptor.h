@@ -47,7 +47,6 @@ License.
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/data_store/sure_file_store.h"
 #include "maidsafe/data_types/immutable_data.h"
 
 #include "maidsafe/encrypt/config.h"
@@ -100,53 +99,6 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
   const size_t kPadSize_;
 };
 
-typedef ImmutableData::Name ImmutableKey;
-
-template<typename Storage>
-struct Put {
-  void operator()(Storage& storage, const ImmutableKey& key, const NonEmptyString& value) {
-    storage.Put(ImmutableData(key, ImmutableData::serialised_type(value)));
-  }
-};
-
-template<>
-struct Put<data_store::SureFileStore> {
-  typedef data_store::SureFileStore Storage;
-  void operator()(Storage& storage, const ImmutableKey& key, const NonEmptyString& value) {
-    storage.Put(key, value);
-  }
-};
-
-template<typename Storage>
-struct Get {
-  NonEmptyString operator()(Storage& storage, const ImmutableKey& key) {
-    return storage.Get<ImmutableData>(key).get().data();
-  }
-};
-
-template<>
-struct Get<data_store::SureFileStore> {
-  typedef data_store::SureFileStore Storage;
-  NonEmptyString operator()(Storage& storage, const ImmutableKey& key) {
-    return storage.Get(key);
-  }
-};
-
-template<typename Storage>
-struct Delete {
-  void operator()(Storage& storage, ImmutableKey& key) {
-    storage.Delete<ImmutableData>(key);
-  }
-};
-
-template<>
-struct Delete<data_store::SureFileStore> {
-  typedef data_store::SureFileStore Storage;
-  void operator()(Storage& storage, ImmutableKey& key) {
-    storage.Delete(key);
-  }
-};
-
 }  // namespace detail
 
 class Sequencer;
@@ -179,10 +131,10 @@ class SelfEncryptor {
   DataMapPtr data_map() const { return data_map_; }
 
  private:
-  typedef detail::ImmutableKey ImmutableKey;
-
-  SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
+  SelfEncryptor(SelfEncryptor&&);
+  SelfEncryptor &operator=(SelfEncryptor);
+
   // If prepared_for_writing_ is not already true, this either reads the first 2
   // chunks into their appropriate buffers or reads the content field of
   // data_map_ into chunk0_raw_.  This guarantees that if data_map_ had
@@ -688,9 +640,9 @@ int SelfEncryptor<Storage>::DecryptChunk(const uint32_t &chunk_num, byte *data) 
   NonEmptyString content;
   {
     std::lock_guard<std::mutex> guard(chunk_store_mutex_);
-    ImmutableKey key(Identity(data_map_->chunks[chunk_num].hash));
+    ImmutableData::Name name(Identity(data_map_->chunks[chunk_num].hash));
     try {
-      content = detail::Get<Storage>()(storage_, key);
+      content = storage_.Get<ImmutableData>(name).get().data();
     }
     catch(...) {
       LOG(kError) << "Failed to get local data for "
@@ -895,9 +847,10 @@ int SelfEncryptor<Storage>::EncryptChunk(const uint32_t &chunk_num,
 
     std::lock_guard<std::mutex> guard(chunk_store_mutex_);
     data_map_->chunks[chunk_num].storage_state = ChunkDetails::kPending;
-    ImmutableKey key(Identity(data_map_->chunks[chunk_num].hash));
     try {
-      detail::Put<Storage>()(storage_, key, NonEmptyString(chunk_content));
+      ImmutableData data(ImmutableData::Name(Identity(data_map_->chunks[chunk_num].hash)),
+                         ImmutableData::serialised_type(NonEmptyString(chunk_content)));
+      storage_.Put(data);
     }
     catch(...) {
       LOG(kError) << "Could not store " << Base32Substr(data_map_->chunks[chunk_num].hash);
@@ -1484,9 +1437,9 @@ void SelfEncryptor<Storage>::DeleteAllChunks() {
   // TODO(Team): Check that this two guards are needed or at least don't clash
   std::lock_guard<std::mutex> chunk_store_guard(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    ImmutableKey key(Identity(data_map_->chunks[i].hash));
+    ImmutableData::Name name(Identity(data_map_->chunks[i].hash));
     try {
-      detail::Delete<Storage>()(storage_, key);
+      storage_.Delete<ImmutableData>(name);
     }
     catch(...) {}
   }
@@ -1585,9 +1538,9 @@ void SelfEncryptor<Storage>::DeleteChunk(const uint32_t &chunk_num) {
   }*/
 
   std::lock_guard<std::mutex> chunk_guard(chunk_store_mutex_);
-  ImmutableKey key(Identity(data_map_->chunks[chunk_num].hash));
+  ImmutableData::Name name(Identity(data_map_->chunks[chunk_num].hash));
   try {
-    detail::Delete<Storage>()(storage_, key);
+    storage_.Delete<ImmutableData>(name);
   }
   catch(...) {}
 }

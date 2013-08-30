@@ -19,61 +19,48 @@ License.
 #include <thread>
 #include <memory>
 
-#include "boost/scoped_array.hpp"
-#include "boost/filesystem/path.hpp"
-
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/data_store/permanent_store.h"
+
+#include "maidsafe/data_store/sure_file_store.h"
+
 #include "maidsafe/encrypt/self_encryptor.h"
 
-namespace fs = boost::filesystem;
+
 
 namespace maidsafe {
-namespace encrypt {
-namespace test {
 
-typedef data_store::PermanentStore DataStore;
-typedef std::shared_ptr<DataStore> DataStorePtr;
-typedef std::shared_ptr<nfs::ClientMaidNfs> ClientNfsPtr;
-typedef std::shared_ptr<SelfEncryptor> SelfEncryptorPtr;
+namespace encrypt {
+
+namespace test {
 
 class EncryptTestBase {
  public:
+  typedef SelfEncryptor<data_store::SureFileStore> SureFileSelfEncryptor;
   explicit EncryptTestBase(int num_procs)
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
-        maid_(maidsafe::passport::Maid::signer_type()),
-        routing_(maid_),
-        client_nfs_(new nfs::ClientMaidNfs(routing_, maid_)),
-        data_store_path_(*test_dir_ / "data_store"),
-        data_store_(std::make_shared<DataStore>(data_store_path_,
-                                                DiskUsage(uint64_t(4294967296)))),
+        sure_file_store_(*test_dir_, DiskUsage(4294967296)),
         data_map_(std::make_shared<DataMap>()),
-        self_encryptor_(std::make_shared<SelfEncryptor>(data_map_,
-                                                        *client_nfs_,
-                                                        *data_store_,
-                                                        num_procs_)),
+        self_encryptor_(new SureFileSelfEncryptor(data_map_, sure_file_store_, num_procs_)),
         original_(),
         decrypted_() {}
+
   virtual ~EncryptTestBase() {}
 
  protected:
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
-  passport::Maid maid_;
-  routing::Routing routing_;
-  ClientNfsPtr client_nfs_;
-  fs::path data_store_path_;
-  DataStorePtr data_store_;
-  DataMapPtr data_map_;
-  SelfEncryptorPtr self_encryptor_;
-  boost::scoped_array<char> original_, decrypted_;
-
- private:
+  data_store::SureFileStore sure_file_store_;
+  std::shared_ptr<DataMap> data_map_;
+  std::unique_ptr<SureFileSelfEncryptor> self_encryptor_;
+  std::unique_ptr<char[]> original_, decrypted_;
 };
 
 }  // namespace test
+
 }  // namespace encrypt
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
