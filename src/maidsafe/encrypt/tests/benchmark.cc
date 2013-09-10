@@ -59,20 +59,10 @@ class Benchmark : public EncryptTestBase, public testing::TestWithParam<uint32_t
     std::string encrypted(encrypting ? "Self-encrypted " : "Self-decrypted ");
     std::string comp(compressible ? "compressible" : "incompressible");
     std::cout << encrypted << BytesToBinarySiUnits(kTestDataSize_) << " of " << comp << " data in "
-              << BytesToBinarySiUnits(kPieceSize_) << " pieces in " << (duration / 1000000)
-              << " seconds at a speed of " << BytesToBinarySiUnits(rate) << "/s\n";
+              << BytesToBinarySiUnits(kPieceSize_) << " pieces in " << (duration / 1000)
+              << " milliseconds at a speed of " << BytesToBinarySiUnits(rate) << "/s\n";
   }
-  const uint32_t kTestDataSize_, kPieceSize_;
-};
-
-TEST_P(Benchmark, FUNC_BenchmarkMemOnly) {
-  bool compressible(true);
-  for (int z(0); z != 2; ++z) {
-    if (compressible)
-      memset(original_.get(), 'a', kTestDataSize_);
-    else
-      memcpy(original_.get(), RandomString(kTestDataSize_).data(), kTestDataSize_);
-
+  void WriteThenRead(bool compressible) {
     chrono_time_point start_time(std::chrono::high_resolution_clock::now());
     for (uint32_t i(0); i < kTestDataSize_; i += kPieceSize_)
       ASSERT_TRUE(self_encryptor_->Write(&original_[i], kPieceSize_, i));
@@ -87,11 +77,21 @@ TEST_P(Benchmark, FUNC_BenchmarkMemOnly) {
     for (uint32_t i(0); i < kTestDataSize_; ++i)
       ASSERT_EQ(original_[i], decrypted_[i]) << "failed @ count " << i;
     PrintResult(start_time, stop_time, false, compressible);
-    compressible = false;
   }
+  const uint32_t kTestDataSize_, kPieceSize_;
+};
+
+TEST_P(Benchmark, FUNC_BenchmarkCompressible) {
+  memset(original_.get(), 'a', kTestDataSize_);
+  WriteThenRead(true);
 }
 
-INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536));
+TEST_P(Benchmark, FUNC_BenchmarkIncompressible) {
+  memcpy(original_.get(), RandomString(kTestDataSize_).data(), kTestDataSize_);
+  WriteThenRead(true);
+}
+
+INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536, 1048576));
 
 // This test is to allow confirmation that memory usage is capped at an
 // acceptable level.  While the test is running, memory usage must be visually
