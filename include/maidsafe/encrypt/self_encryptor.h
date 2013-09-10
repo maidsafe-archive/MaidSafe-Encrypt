@@ -48,6 +48,7 @@
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/profiler.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/data_types/immutable_data.h"
@@ -291,6 +292,7 @@ SelfEncryptor<Storage>::SelfEncryptor(DataMapPtr data_map, Storage& storage, int
 
 template<typename Storage>
 SelfEncryptor<Storage>::~SelfEncryptor() {
+  SCOPED_PROFILE
   if (truncated_file_size_ > file_size_)
     AppendNulls(truncated_file_size_);
   Flush();
@@ -300,6 +302,7 @@ template<typename Storage>
 bool SelfEncryptor<Storage>::Write(const char *data,
                                    const uint32_t &length,
                                    const uint64_t &position) {
+  SCOPED_PROFILE
   if (length == 0)
     return true;
 
@@ -374,6 +377,7 @@ bool SelfEncryptor<Storage>::Write(const char *data,
 
 template<typename Storage>
 int SelfEncryptor<Storage>::PrepareToWrite(const uint32_t &length, const uint64_t &position) {
+  SCOPED_PROFILE
   if (position + length > file_size_) {
     file_size_ = position + length;
     CalculateSizes(false);
@@ -452,6 +456,7 @@ template<typename Storage>
 void SelfEncryptor<Storage>::PutToReadCache(const char *data,
                                    const uint32_t &length,
                                    const uint64_t &position) {
+  SCOPED_PROFILE
   if (!prepared_for_reading_)
     return;
   if (position < cache_start_position_ + kDefaultByteArraySize_ &&
@@ -473,6 +478,7 @@ template<typename Storage>
 void SelfEncryptor<Storage>::PutToReadBuffer(const char *data,
                                     const uint32_t &length,
                                     const uint64_t &position) {
+  SCOPED_PROFILE
   if (!buffer_activated_)
     return;
   if (position < buffer_length_) {
@@ -485,6 +491,7 @@ void SelfEncryptor<Storage>::PutToReadBuffer(const char *data,
 
 template<typename Storage>
 void SelfEncryptor<Storage>::CalculateSizes(bool force) {
+  SCOPED_PROFILE
   if (normal_chunk_size_ != kDefaultChunkSize || force) {
     if (file_size_ < 3 * kMinChunkSize) {
       normal_chunk_size_ = 0;
@@ -510,6 +517,7 @@ template<typename Storage>
 uint32_t SelfEncryptor<Storage>::PutToInitialChunks(const char *data,
                                            uint32_t *length,
                                            uint64_t *position) {
+  SCOPED_PROFILE
   if (data_map_->chunks.size() < 2)
     data_map_->chunks.resize(2);
   uint32_t copy_length0(0);
@@ -557,6 +565,7 @@ bool SelfEncryptor<Storage>::GetDataOffsetForEnqueuing(const uint32_t &length,
                                               const uint64_t &position,
                                               uint32_t *data_offset,
                                               uint32_t *queue_offset) {
+  SCOPED_PROFILE
   // Cover most common case first
   if (position == current_position_) {
     *data_offset = 0;
@@ -585,6 +594,7 @@ int SelfEncryptor<Storage>::PutToEncryptQueue(const char *data,
                                      uint32_t length,
                                      uint32_t data_offset,
                                      uint32_t queue_offset) {
+  SCOPED_PROFILE
   length -= data_offset;
   uint32_t copy_length = std::min(length, kQueueCapacity_ - queue_offset);
   uint32_t copied(0);
@@ -610,6 +620,7 @@ int SelfEncryptor<Storage>::PutToEncryptQueue(const char *data,
 
 template<typename Storage>
 bool SelfEncryptor<Storage>::GetLengthForSequencer(const uint64_t &position, uint32_t *length) {
+  SCOPED_PROFILE
   if (*length == 0)
     return false;
   assert(position >= 2 * kDefaultChunkSize);
@@ -625,6 +636,7 @@ bool SelfEncryptor<Storage>::GetLengthForSequencer(const uint64_t &position, uin
 
 template<typename Storage>
 int SelfEncryptor<Storage>::DecryptChunk(const uint32_t &chunk_num, byte *data) {
+  SCOPED_PROFILE
   if (data_map_->chunks.size() <= chunk_num) {
     LOG(kWarning) << "Can't decrypt chunk " << chunk_num << " of " << data_map_->chunks.size();
     return kInvalidChunkIndex;
@@ -688,6 +700,7 @@ void SelfEncryptor<Storage>::GetPadIvKey(uint32_t this_chunk_num,
                                          ByteArray iv,
                                          ByteArray pad,
                                          bool writing) {
+  SCOPED_PROFILE
   uint32_t num_chunks = static_cast<uint32_t>(data_map_->chunks.size());
   uint32_t n_1_chunk = (this_chunk_num + num_chunks - 1) % num_chunks;
   uint32_t n_2_chunk = (this_chunk_num + num_chunks - 2) % num_chunks;
@@ -736,6 +749,7 @@ void SelfEncryptor<Storage>::GetPadIvKey(uint32_t this_chunk_num,
 
 template<typename Storage>
 int SelfEncryptor<Storage>::ProcessMainQueue() {
+  SCOPED_PROFILE
   if (retrievable_from_queue_ < kDefaultChunkSize)
     return kSuccess;
 
@@ -819,6 +833,7 @@ template<typename Storage>
 int SelfEncryptor<Storage>::EncryptChunk(const uint32_t &chunk_num,
                                          byte *data,
                                          const uint32_t &length) {
+  SCOPED_PROFILE
   assert(data_map_->chunks.size() > chunk_num);
   data_map_->chunks[chunk_num].hash.resize(crypto::SHA512::DIGESTSIZE);
 
@@ -876,6 +891,7 @@ void SelfEncryptor<Storage>::CalculatePreHash(const uint32_t &chunk_num,
                                      const byte *data,
                                      const uint32_t &length,
                                      bool *modified) {
+  SCOPED_PROFILE
   if (data_map_->chunks[chunk_num].pre_hash_state == ChunkDetails::kOk) {
     *modified = false;
     return;
@@ -911,6 +927,7 @@ void SelfEncryptor<Storage>::CalculatePreHash(const uint32_t &chunk_num,
 
 template<typename Storage>
 bool SelfEncryptor<Storage>::Flush() {
+  SCOPED_PROFILE
   if (flushed_ || !prepared_for_writing_)
     return true;
 
@@ -1153,6 +1170,7 @@ bool SelfEncryptor<Storage>::Flush() {
 
 template<typename Storage>
 bool SelfEncryptor<Storage>::Read(char* data, const uint32_t &length, const uint64_t &position) {
+  SCOPED_PROFILE
   if (length == 0)
     return true;
 
@@ -1188,6 +1206,7 @@ template<typename Storage>
 bool SelfEncryptor<Storage>::ReadFromBuffer(char *data,
                                             const uint32_t &length,
                                             const uint64_t &position) {
+  SCOPED_PROFILE
   if (!buffer_activated_) {
     uint64_t diff((position > last_read_position_) ? (position - last_read_position_) :
                                                      (last_read_position_ - position));
@@ -1227,6 +1246,7 @@ bool SelfEncryptor<Storage>::ReadFromBuffer(char *data,
 
 template<typename Storage>
 void SelfEncryptor<Storage>::PrepareToRead() {
+  SCOPED_PROFILE
   if (prepared_for_reading_)
     return;
 
@@ -1239,6 +1259,7 @@ template<typename Storage>
 int SelfEncryptor<Storage>::Transmogrify(char *data,
                                          const uint32_t &length,
                                          const uint64_t &position) {
+  SCOPED_PROFILE
   memset(data, 0, length);
 
   // For tiny files, all data is in data_map_->content or chunk0_raw_.
@@ -1278,6 +1299,7 @@ template<typename Storage>
 int SelfEncryptor<Storage>::ReadDataMapChunks(char *data,
                                               const uint32_t &length,
                                               const uint64_t &position) {
+  SCOPED_PROFILE
   if (data_map_->chunks.empty() || position >= file_size_)
     return kSuccess;
 
@@ -1372,6 +1394,7 @@ template<typename Storage>
 void SelfEncryptor<Storage>::ReadInProcessData(char *data,
                                       const uint32_t &length,
                                       const uint64_t &position) {
+  SCOPED_PROFILE
   uint32_t copy_size(0), bytes_read(0);
   uint64_t read_position(position);
   // Get data from chunk 0 if required.
@@ -1441,6 +1464,7 @@ void SelfEncryptor<Storage>::ReadInProcessData(char *data,
 
 template<typename Storage>
 void SelfEncryptor<Storage>::DeleteAllChunks() {
+  SCOPED_PROFILE
   // TODO(Team): Check that this two guards are needed or at least don't clash
   std::lock_guard<std::mutex> chunk_store_guard(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
@@ -1456,6 +1480,7 @@ void SelfEncryptor<Storage>::DeleteAllChunks() {
 
 template<typename Storage>
 bool SelfEncryptor<Storage>::Truncate(const uint64_t &position) {
+  SCOPED_PROFILE
   if (position > file_size_)
     return TruncateUp(position);
   else if (position < file_size_)
@@ -1465,6 +1490,7 @@ bool SelfEncryptor<Storage>::Truncate(const uint64_t &position) {
 
 template<typename Storage>
 bool SelfEncryptor<Storage>::TruncateDown(const uint64_t &position) {
+  SCOPED_PROFILE
   // truncate queue, sequencer, and chunks 0 & 1.
   PrepareToWrite(0, 0);
 
@@ -1504,6 +1530,7 @@ bool SelfEncryptor<Storage>::TruncateDown(const uint64_t &position) {
 
 template<typename Storage>
 bool SelfEncryptor<Storage>::TruncateUp(const uint64_t &position) {
+  SCOPED_PROFILE
   if (file_size_ < kDefaultByteArraySize_) {
     uint64_t target_position(std::min(position, static_cast<uint64_t>(kDefaultByteArraySize_)));
     if (!AppendNulls(target_position)) {
@@ -1519,6 +1546,7 @@ bool SelfEncryptor<Storage>::TruncateUp(const uint64_t &position) {
 
 template<typename Storage>
 bool SelfEncryptor<Storage>::AppendNulls(const uint64_t &position) {
+  SCOPED_PROFILE
   std::unique_ptr<char[]>tail_data(new char[kDefaultByteArraySize_]);
   memset(tail_data.get(), 0, kDefaultByteArraySize_);
   uint64_t current_position(file_size_);
@@ -1534,6 +1562,7 @@ bool SelfEncryptor<Storage>::AppendNulls(const uint64_t &position) {
 
 template<typename Storage>
 void SelfEncryptor<Storage>::DeleteChunk(const uint32_t &chunk_num) {
+  SCOPED_PROFILE
   // TODO(Team): Check that this two guards are needed or at least don't clash
   std::lock_guard<std::mutex> data_guard(data_mutex_);
   if (data_map_->chunks[chunk_num].hash.empty())
