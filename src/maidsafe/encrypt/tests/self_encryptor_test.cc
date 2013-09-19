@@ -60,8 +60,8 @@ const int g_num_procs(Concurrency());
 
 uint64_t TotalSize(DataMapPtr data_map) {
   uint64_t size(data_map->chunks.empty() ? data_map->content.size() : 0);
-  for (auto it(data_map->chunks.begin()); it != data_map->chunks.end(); ++it)
-    size += (*it).size;
+  for (auto & elem : data_map->chunks)
+    size += (elem).size;
   return size;
 }
 
@@ -143,13 +143,13 @@ class BasicOffsetTest : public EncryptTestBase, public testing::TestWithParam<Si
   }
 
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     std::string content(RandomString(kDataSize_));
     std::copy(content.data(), content.data() + kDataSize_, original_.get());
     memset(decrypted_.get(), 1, kDataSize_);
   }
 
-  void TearDown() {}
+  void TearDown() override {}
 
   const uint32_t kDataSize_, kOffset_;
   TestFileSize test_file_size_;
@@ -326,7 +326,7 @@ class EncryptTest : public EncryptTestBase, public testing::TestWithParam<uint32
     decrypted_.reset(new char[kDataSize_]);
   }
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     std::string content(RandomString(kDataSize_));
     std::copy(content.data(), content.data() + kDataSize_, original_.get());
     memset(decrypted_.get(), 1, kDataSize_);
@@ -516,7 +516,7 @@ class BasicTest : public EncryptTestBase, public testing::Test {
     decrypted_.reset(new char[kDataSize_]);
   }
  protected:
-  virtual void SetUp() {
+  virtual void SetUp() override {
     std::copy(content_.data(), content_.data() + kDataSize_, original_.get());
     memset(decrypted_.get(), 1, kDataSize_);
   }
@@ -645,11 +645,11 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
                                                (*overlap_itr).second.size()));
 
   uint32_t wtotal(0);
-  for (auto it = broken_data.begin(); it != broken_data.end(); ++it) {
-    EXPECT_TRUE(self_encryptor_->Write((*it).second.data(),
-                                       static_cast<uint32_t>((*it).second.size()),
-                                       (*it).first));
-    wtotal += static_cast<uint32_t>(it->second.size());
+  for (auto & elem : broken_data) {
+    EXPECT_TRUE(self_encryptor_->Write((elem).second.data(),
+                                       static_cast<uint32_t>((elem).second.size()),
+                                       (elem).first));
+    wtotal += static_cast<uint32_t>(elem.second.size());
   }
   EXPECT_EQ(wtotal, kDataSize_);
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));

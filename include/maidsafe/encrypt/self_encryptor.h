@@ -75,7 +75,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
       : pad_(pad), count_(0), kPadSize_(pad_size) {
     CryptoPP::Filter::Detach(attachment);
   }
-  size_t Put2(const byte* in_string, size_t length, int message_end, bool blocking) {
+  size_t Put2(const byte* in_string, size_t length, int message_end, bool blocking) override {
     if (length == 0) {
       return AttachedTransformation()->Put2(in_string, length, message_end, blocking);
     }
@@ -92,7 +92,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 
     return AttachedTransformation()->Put2(buffer.get(), length, message_end, blocking);
   }
-  bool IsolatedFlush(bool, bool) { return false; }
+  bool IsolatedFlush(bool, bool) override { return false; }
 
  private:
   XORFilter &operator = (const XORFilter&);
