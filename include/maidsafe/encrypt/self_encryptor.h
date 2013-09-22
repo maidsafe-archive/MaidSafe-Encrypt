@@ -661,14 +661,14 @@ int SelfEncryptor<Storage>::DecryptChunk(const uint32_t &chunk_num, byte *data) 
     }
     catch(...) {
       LOG(kError) << "Failed to get local data for "
-                  << EncodeToBase32(data_map_->chunks[chunk_num].hash);
+                  << Base64Encode(data_map_->chunks[chunk_num].hash);
       return kMissingChunk;
     }
   }
 
   if (content.string().empty()) {
     LOG(kError) << "Could not find chunk number " << chunk_num
-                << ", hash " << Base32Substr(data_map_->chunks[chunk_num].hash);
+                << ", hash " << Base64Substr(data_map_->chunks[chunk_num].hash);
     return kMissingChunk;
   }
 
@@ -871,7 +871,7 @@ int SelfEncryptor<Storage>::EncryptChunk(const uint32_t &chunk_num,
       storage_.Put(data);
     }
     catch(...) {
-      LOG(kError) << "Could not store " << Base32Substr(data_map_->chunks[chunk_num].hash);
+      LOG(kError) << "Could not store " << Base64Substr(data_map_->chunks[chunk_num].hash);
       data_map_->chunks[chunk_num].storage_state = ChunkDetails::kUnstored;
       result = kFailedToStoreChunk;
     }

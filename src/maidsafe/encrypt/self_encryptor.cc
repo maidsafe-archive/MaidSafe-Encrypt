@@ -32,15 +32,15 @@ void DebugPrint(bool encrypting,
                 const byte* plain_data,
                 uint32_t plain_data_length,
                 const std::string &encrypted_data) {
-  std::string pad_str(Base32Substr(std::string(
+  std::string pad_str(Base64Substr(std::string(
       reinterpret_cast<char*>(pad.get()), detail::kPadSize)));
-  std::string key_str(Base32Substr(std::string(
+  std::string key_str(Base64Substr(std::string(
       reinterpret_cast<char*>(key.get()), crypto::AES256_KeySize)));
-  std::string iv_str(Base32Substr(std::string(
+  std::string iv_str(Base64Substr(std::string(
       reinterpret_cast<char*>(iv.get()), crypto::AES256_IVSize)));
-  std::string plain(Base32Substr(crypto::Hash<crypto::SHA512>(std::string(
+  std::string plain(Base64Substr(crypto::Hash<crypto::SHA512>(std::string(
       reinterpret_cast<const char*>(plain_data), plain_data_length))));
-  std::string encrypted(Base32Substr(crypto::Hash<crypto::SHA512>(
+  std::string encrypted(Base64Substr(crypto::Hash<crypto::SHA512>(
       encrypted_data)));
   LOG(kInfo) << (encrypting ? "\nEncrypt chunk " : "\nDecrypt chunk ")
              << chunk_num << "\nPad: " << pad_str << "   Key: " << key_str
