@@ -25,23 +25,19 @@ namespace maidsafe {
 namespace encrypt {
 
 namespace {
-const SequenceBlock kInvalidSeqBlock(std::make_pair(
-    std::numeric_limits<uint64_t>::max(), ByteArray()));
+const SequenceBlock kInvalidSeqBlock(std::make_pair(std::numeric_limits<uint64_t>::max(),
+                                                    ByteArray()));
 }  // unnamed namespace
 
-int Sequencer::Add(const char *data,
-                   const uint32_t &length,
-                   const uint64_t &position) {
+int Sequencer::Add(const char* data, const uint32_t& length, const uint64_t& position) {
   try {
     // If the insertion point is past the current end, just insert a new element
-    if (blocks_.empty() || position >
-        (*blocks_.rbegin()).first + Size((*blocks_.rbegin()).second)) {
-      auto result = blocks_.insert(std::make_pair(position,
-                                                  GetNewByteArray(length)));
+    if (blocks_.empty() ||
+        position > (*blocks_.rbegin()).first + Size((*blocks_.rbegin()).second)) {
+      auto result = blocks_.insert(std::make_pair(position, GetNewByteArray(length)));
       BOOST_ASSERT(result.second);
       if (MemCopy((*(result.first)).second, 0, data, length) != length) {
-        LOG(kError) << "Error adding " << length << " bytes to sequencer at "
-                    << position;
+        LOG(kError) << "Error adding " << length << " bytes to sequencer at " << position;
         return kSequencerAddError;
       }
       return kSuccess;
@@ -59,14 +55,13 @@ int Sequencer::Add(const char *data,
         ++lower_itr;
     }
 
-    const uint64_t &lower_start_position((*lower_itr).first);
+    const uint64_t& lower_start_position((*lower_itr).first);
     uint64_t new_start_position(position);
     uint32_t pre_overlap_size(0);
     bool reduced_upper(false);
 
     if (position > lower_start_position) {
-      BOOST_ASSERT(position - lower_start_position <
-                   std::numeric_limits<uint32_t>::max());
+      BOOST_ASSERT(position - lower_start_position < std::numeric_limits<uint32_t>::max());
       pre_overlap_size = static_cast<uint32_t>(position - lower_start_position);
       new_start_position = lower_start_position;
     }
@@ -77,26 +72,23 @@ int Sequencer::Add(const char *data,
       --upper_itr;
       reduced_upper = true;
     }
-    const uint64_t &upper_start_position((*upper_itr).first);
+    const uint64_t& upper_start_position((*upper_itr).first);
     uint32_t upper_size(Size((*upper_itr).second));
 
     uint64_t post_overlap_posn(position + length);
     uint32_t post_overlap_size(0);
 
-    if ((position + length) < (upper_start_position + upper_size) &&
-        reduced_upper) {
+    if ((position + length) < (upper_start_position + upper_size) && reduced_upper) {
       BOOST_ASSERT(upper_size > post_overlap_posn - upper_start_position);
       BOOST_ASSERT(upper_size - (post_overlap_posn - upper_start_position) <
                    std::numeric_limits<uint32_t>::max());
-      post_overlap_size = upper_size -
-          static_cast<uint32_t>(post_overlap_posn - upper_start_position);
+      post_overlap_size =
+          upper_size - static_cast<uint32_t>(post_overlap_posn - upper_start_position);
     }
 
-    ByteArray new_entry =
-        GetNewByteArray(pre_overlap_size + length + post_overlap_size);
+    ByteArray new_entry = GetNewByteArray(pre_overlap_size + length + post_overlap_size);
 
-    if (MemCopy(new_entry, 0, (*lower_itr).second.get(), pre_overlap_size) !=
-        pre_overlap_size) {
+    if (MemCopy(new_entry, 0, (*lower_itr).second.get(), pre_overlap_size) != pre_overlap_size) {
       LOG(kError) << "Error adding pre-overlap";
       return kSequencerAddError;
     }
@@ -106,10 +98,8 @@ int Sequencer::Add(const char *data,
       return kSequencerAddError;
     }
 
-    if (MemCopy(new_entry,
-                pre_overlap_size + length,
-                (*upper_itr).second.get() +
-                    (post_overlap_posn - upper_start_position),
+    if (MemCopy(new_entry, pre_overlap_size + length,
+                (*upper_itr).second.get() + (post_overlap_posn - upper_start_position),
                 post_overlap_size) != post_overlap_size) {
       LOG(kError) << "Error adding post-overlap";
       return kSequencerAddError;
@@ -122,7 +112,7 @@ int Sequencer::Add(const char *data,
     BOOST_ASSERT(result.second);
     static_cast<void>(result);
   }
-  catch(const std::exception &e) {
+  catch (const std::exception& e) {
     // TODO(DI) here we need to catch the error - likely out of mem.  We
     // should then set up a flilestream in boost::tmp_dir, empty sequencer and
     // this write data to the file and set a flag to say we have written a
@@ -137,7 +127,7 @@ int Sequencer::Add(const char *data,
   return kSuccess;
 }
 
-ByteArray Sequencer::Get(const uint64_t &position) {
+ByteArray Sequencer::Get(const uint64_t& position) {
   auto itr(blocks_.find(position));
   if (itr == blocks_.end())
     return ByteArray();
@@ -154,13 +144,12 @@ SequenceBlock Sequencer::GetFirst() {
   return result;
 }
 
-SequenceBlock Sequencer::PeekBeyond(const uint64_t &position) const {
+SequenceBlock Sequencer::PeekBeyond(const uint64_t& position) const {
   auto itr(blocks_.lower_bound(position));
   return itr == blocks_.end() ? kInvalidSeqBlock : *itr;
 }
 
-SequenceBlock Sequencer::Peek(const uint32_t &length,
-                              const uint64_t &position) const {
+SequenceBlock Sequencer::Peek(const uint32_t& length, const uint64_t& position) const {
   if (blocks_.empty())
     return kInvalidSeqBlock;
 
@@ -184,7 +173,7 @@ SequenceBlock Sequencer::Peek(const uint32_t &length,
   return ((*itr).first < length + position) ? *itr : kInvalidSeqBlock;
 }
 
-void Sequencer::Truncate(const uint64_t &position) {
+void Sequencer::Truncate(const uint64_t& position) {
   if (blocks_.empty())
     return;
 
@@ -198,8 +187,8 @@ void Sequencer::Truncate(const uint64_t &position) {
   if ((*lower_itr).first < position) {
     // If it spans, truncate the block
     if ((*lower_itr).first + Size((*lower_itr).second) > position) {
-      uint32_t reduced_size = static_cast<uint32_t>((*lower_itr).first +
-                              Size((*lower_itr).second) - position);
+      uint32_t reduced_size =
+          static_cast<uint32_t>((*lower_itr).first + Size((*lower_itr).second) - position);
       ByteArray temp(GetNewByteArray(reduced_size));
 #ifndef NDEBUG
       uint32_t copied =

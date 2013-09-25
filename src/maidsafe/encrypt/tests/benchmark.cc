@@ -26,7 +26,6 @@
 
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
 
-
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -39,18 +38,17 @@ class Benchmark : public EncryptTestBase, public testing::TestWithParam<uint32_t
  public:
   typedef std::chrono::time_point<std::chrono::high_resolution_clock> chrono_time_point;
 
-  Benchmark() : EncryptTestBase(0),
-                kTestDataSize_(1024 * 1024 * 20),
-                kPieceSize_(GetParam() ? GetParam() : kTestDataSize_) {
+  Benchmark()
+      : EncryptTestBase(0),
+        kTestDataSize_(1024 * 1024 * 20),
+        kPieceSize_(GetParam() ? GetParam() : kTestDataSize_) {
     original_.reset(new char[kTestDataSize_]);
     decrypted_.reset(new char[kTestDataSize_]);
   }
 
  protected:
-  void PrintResult(const chrono_time_point& start_time,
-                   const chrono_time_point& stop_time,
-                   bool encrypting,
-                   bool compressible) {
+  void PrintResult(const chrono_time_point& start_time, const chrono_time_point& stop_time,
+                   bool encrypting, bool compressible) {
     uint64_t duration =
         std::chrono::duration_cast<std::chrono::microseconds>(stop_time - start_time).count();
     if (duration == 0)
@@ -120,14 +118,15 @@ TEST(MassiveFile, FUNC_MemCheck) {
   // Sleep to allow chosen memory monitor to update its display.
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-//  LOG(kInfo) << "Resetting chunk store.";
-//  client_nfs.reset();
-//  boost::system::error_code rm_error_code, exists_error_code;
-//  EXPECT_GT(fs::remove_all(store_path, rm_error_code), 0U) << rm_error_code.message();
-// EXPECT_FALSE(fs::exists(store_path, exists_error_code)) << "Remove all failed: " << rm_error_code
-//      << (exists_error_code ? "\nExists error: " + exists_error_code.message() : "");
-//  // Sleep to allow chosen memory monitor to update its display.
-//  std::this_thread::sleep_for(std::chrono::seconds(3));
+  //  LOG(kInfo) << "Resetting chunk store.";
+  //  client_nfs.reset();
+  //  boost::system::error_code rm_error_code, exists_error_code;
+  //  EXPECT_GT(fs::remove_all(store_path, rm_error_code), 0U) << rm_error_code.message();
+  // EXPECT_FALSE(fs::exists(store_path, exists_error_code)) << "Remove all failed: " <<
+  // rm_error_code
+  //      << (exists_error_code ? "\nExists error: " + exists_error_code.message() : "");
+  //  // Sleep to allow chosen memory monitor to update its display.
+  //  std::this_thread::sleep_for(std::chrono::seconds(3));
 }
 
 }  // namespace test

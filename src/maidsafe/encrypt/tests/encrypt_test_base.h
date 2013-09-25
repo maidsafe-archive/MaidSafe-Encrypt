@@ -29,8 +29,6 @@
 
 #include "maidsafe/encrypt/self_encryptor.h"
 
-
-
 namespace maidsafe {
 
 namespace encrypt {

@@ -26,22 +26,30 @@
 #include "maidsafe/common/crypto.h"
 #include "boost/shared_array.hpp"
 
-
 namespace maidsafe {
 
 namespace encrypt {
 
 struct ChunkDetails {
-  enum PreHashState { kEmpty, kOutdated, kOk };
-  enum StorageState { kStored, kPending, kUnstored };
-  ChunkDetails() : hash(),
-                   pre_hash(),
-                   old_n1_pre_hash(),
-                   old_n2_pre_hash(),
-                   pre_hash_state(kEmpty),
-                   storage_state(kUnstored),
-                   size(0) {}
-  std::string hash;  // SHA512 of processed chunk
+  enum PreHashState {
+    kEmpty,
+    kOutdated,
+    kOk
+  };
+  enum StorageState {
+    kStored,
+    kPending,
+    kUnstored
+  };
+  ChunkDetails()
+      : hash(),
+        pre_hash(),
+        old_n1_pre_hash(),
+        old_n2_pre_hash(),
+        pre_hash_state(kEmpty),
+        storage_state(kUnstored),
+        size(0) {}
+  std::string hash;                           // SHA512 of processed chunk
   byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
   // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
   // modified content
@@ -56,7 +64,7 @@ struct ChunkDetails {
 struct DataMap {
   DataMap() : chunks(), content() {}
 
-  bool operator==(const DataMap &other) const {
+  bool operator==(const DataMap& other) const {
     if (!this)
       return false;
 
@@ -70,7 +78,7 @@ struct DataMap {
     return true;
   }
 
-  bool operator!=(const DataMap &other) const { return !(*this == other); }
+  bool operator!=(const DataMap& other) const { return !(*this == other); }
 
   std::vector<ChunkDetails> chunks;
   std::string content;  // Whole data item, if small enough
