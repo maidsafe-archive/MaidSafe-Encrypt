@@ -41,16 +41,20 @@ include_directories(${nfs_SOURCE_DIR}/include)
 #==================================================================================================#
 glob_dir(Encrypt ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt Encrypt)
 glob_dir(EncryptTests ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests Tests)
-
+list(REMOVE_ITEM EncryptTestsAllFiles "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/benchmark.cc")
 
 #==================================================================================================#
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(encrypt ${EncryptAllFiles})
 target_link_libraries(maidsafe_encrypt maidsafe_private)
+ms_add_executable(benchmark_encrypt "Tests/Encrypt"
+                 ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/benchmark.cc
+                 ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_main.cc)
 
+target_link_libraries(benchmark_encrypt maidsafe_encrypt)
 if(MaidsafeTesting)
-  ms_add_executable(TESTencrypt "Tests/Encrypt" ${EncryptTestsAllFiles})
+  ms_add_executable(TESTencrypt "Tests/Encrypt"  ${EncryptTestsAllFiles})
   target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client)
 endif()
 
