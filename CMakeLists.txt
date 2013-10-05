@@ -69,6 +69,7 @@ include(standard_flags)
 if(UNIX AND NOT APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
 endif()
+set_target_properties(benchmark_encrypt PROPERTIES COMPILE_DEFINITIONS "USE_GTEST")
 
 
 #==================================================================================================#
