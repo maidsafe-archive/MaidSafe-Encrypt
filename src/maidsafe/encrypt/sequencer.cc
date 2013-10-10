@@ -29,7 +29,7 @@ const SequenceBlock kInvalidSeqBlock(std::make_pair(std::numeric_limits<uint64_t
                                                     ByteArray()));
 }  // unnamed namespace
 
-int Sequencer::Add(const char* data, const uint32_t& length, const uint64_t& position) {
+int Sequencer::Add(const char* data, uint32_t length, uint64_t position) {
   try {
     // If the insertion point is past the current end, just insert a new element
     if (blocks_.empty() ||
@@ -55,7 +55,7 @@ int Sequencer::Add(const char* data, const uint32_t& length, const uint64_t& pos
         ++lower_itr;
     }
 
-    const uint64_t& lower_start_position((*lower_itr).first);
+    uint64_t lower_start_position((*lower_itr).first);
     uint64_t new_start_position(position);
     uint32_t pre_overlap_size(0);
     bool reduced_upper(false);
@@ -72,7 +72,7 @@ int Sequencer::Add(const char* data, const uint32_t& length, const uint64_t& pos
       --upper_itr;
       reduced_upper = true;
     }
-    const uint64_t& upper_start_position((*upper_itr).first);
+    uint64_t upper_start_position((*upper_itr).first);
     uint32_t upper_size(Size((*upper_itr).second));
 
     uint64_t post_overlap_posn(position + length);
@@ -127,7 +127,7 @@ int Sequencer::Add(const char* data, const uint32_t& length, const uint64_t& pos
   return kSuccess;
 }
 
-ByteArray Sequencer::Get(const uint64_t& position) {
+ByteArray Sequencer::Get(uint64_t position) {
   auto itr(blocks_.find(position));
   if (itr == blocks_.end())
     return ByteArray();
@@ -144,12 +144,12 @@ SequenceBlock Sequencer::GetFirst() {
   return result;
 }
 
-SequenceBlock Sequencer::PeekBeyond(const uint64_t& position) const {
+SequenceBlock Sequencer::PeekBeyond(uint64_t position) const {
   auto itr(blocks_.lower_bound(position));
   return itr == blocks_.end() ? kInvalidSeqBlock : *itr;
 }
 
-SequenceBlock Sequencer::Peek(const uint32_t& length, const uint64_t& position) const {
+SequenceBlock Sequencer::Peek(uint32_t length, uint64_t position) const {
   if (blocks_.empty())
     return kInvalidSeqBlock;
 
@@ -173,7 +173,7 @@ SequenceBlock Sequencer::Peek(const uint32_t& length, const uint64_t& position) 
   return ((*itr).first < length + position) ? *itr : kInvalidSeqBlock;
 }
 
-void Sequencer::Truncate(const uint64_t& position) {
+void Sequencer::Truncate(uint64_t position) {
   if (blocks_.empty())
     return;
 

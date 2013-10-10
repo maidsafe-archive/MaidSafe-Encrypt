@@ -28,15 +28,15 @@ namespace encrypt {
 
 typedef std::shared_ptr<byte> ByteArray;
 
-ByteArray GetNewByteArray(const uint32_t& size);
+ByteArray GetNewByteArray(uint32_t size);
 
 uint32_t Size(const ByteArray& ptr);
 
-uint32_t MemCopy(const ByteArray& destination, const uint32_t& destination_offset,
+uint32_t MemCopy(const ByteArray& destination, uint32_t destination_offset,
                  const void* source, uint32_t copy_size);
 
 struct ByteArrayDeleter {
-  explicit ByteArrayDeleter(const uint32_t& size) : kSize_(size) {}
+  explicit ByteArrayDeleter(uint32_t size) : kSize_(size) {}
   void operator()(byte*& ptr) {
     delete[] ptr;
     ptr = nullptr;

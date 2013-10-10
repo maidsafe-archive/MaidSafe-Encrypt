@@ -37,23 +37,23 @@ class Sequencer {
   // Adds a new block to the map.  If this overlaps or joins any existing ones,
   // the new block is set to cover the total span of all the overlapping blocks
   // and the old ones are removed.
-  int Add(const char* data, const uint32_t& length, const uint64_t& position);
+  int Add(const char* data, uint32_t length, uint64_t position);
   // Returns and removes the block of sequenced data at position in the map.  If
   // no block exists at position, it returns a default (NULL) ByteArray.
-  ByteArray Get(const uint64_t& position);
+  ByteArray Get(uint64_t position);
   // Returns and removes the first block of sequenced data in the map.  If the
   // map is empty, it returns kInvalidSeqBlock.
   SequenceBlock GetFirst();
   // Returns without removing the first block of sequenced data in the map which
   // compares >= position.  If this is the map end, it returns kInvalidSeqBlock.
-  SequenceBlock PeekBeyond(const uint64_t& position) const;
+  SequenceBlock PeekBeyond(uint64_t position) const;
   // Returns without removing the first block of sequenced data in the map which
   // has data contained within area defined by position and length.  If this is
   // the map end, it returns kInvalidSeqBlock.
-  SequenceBlock Peek(const uint32_t& length, const uint64_t& position) const;
+  SequenceBlock Peek(uint32_t length, uint64_t position) const;
   // Removes all blocks after position, and reduces any block spanning position
   // to terminate at position.
-  void Truncate(const uint64_t& position);
+  void Truncate(uint64_t position);
   void clear() { blocks_.clear(); }
 
  private:
