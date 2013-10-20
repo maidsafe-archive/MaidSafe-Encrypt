@@ -22,7 +22,7 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
-#include "maidsafe/data_store/sure_file_store.h"
+#include "maidsafe/data_store/local_store.h"
 
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
 
@@ -98,11 +98,11 @@ TEST(MassiveFile, FUNC_MemCheck) {
   int kNumProcs(8);
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path store_path(*test_dir / "data_store");
-  data_store::SureFileStore sure_file_store(store_path, DiskUsage(uint64_t(4294967296)));
+  data_store::LocalStore local_store(store_path, DiskUsage(uint64_t(4294967296)));
 
   DataMapPtr data_map(new DataMap);
-  std::unique_ptr<SelfEncryptor<data_store::SureFileStore>> self_encryptor(
-      new SelfEncryptor<data_store::SureFileStore>(data_map, sure_file_store, kNumProcs));
+  std::unique_ptr<SelfEncryptor<data_store::LocalStore>> self_encryptor(
+      new SelfEncryptor<data_store::LocalStore>(data_map, local_store, kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
   boost::scoped_array<char> original(new char[kDataSize]);

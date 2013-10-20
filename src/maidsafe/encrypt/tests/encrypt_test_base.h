@@ -25,7 +25,7 @@
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/data_store/sure_file_store.h"
+#include "maidsafe/data_store/local_store.h"
 
 #include "maidsafe/encrypt/self_encryptor.h"
 
@@ -37,13 +37,13 @@ namespace test {
 
 class EncryptTestBase {
  public:
-  typedef SelfEncryptor<data_store::SureFileStore> SureFileSelfEncryptor;
+  typedef SelfEncryptor<data_store::LocalStore> LocalSelfEncryptor;
   explicit EncryptTestBase(int num_procs)
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
-        sure_file_store_(*test_dir_, DiskUsage(4294967296)),
+        local_store_(*test_dir_, DiskUsage(4294967296)),
         data_map_(std::make_shared<DataMap>()),
-        self_encryptor_(new SureFileSelfEncryptor(data_map_, sure_file_store_, num_procs_)),
+        self_encryptor_(new LocalSelfEncryptor(data_map_, local_store_, num_procs_)),
         original_(),
         decrypted_() {}
 
@@ -52,9 +52,9 @@ class EncryptTestBase {
  protected:
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
-  data_store::SureFileStore sure_file_store_;
+  data_store::LocalStore local_store_;
   std::shared_ptr<DataMap> data_map_;
-  std::unique_ptr<SureFileSelfEncryptor> self_encryptor_;
+  std::unique_ptr<LocalSelfEncryptor> self_encryptor_;
   std::unique_ptr<char[]> original_, decrypted_;
 };
 
