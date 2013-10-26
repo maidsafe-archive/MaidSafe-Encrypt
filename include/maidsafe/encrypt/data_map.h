@@ -64,6 +64,13 @@ struct ChunkDetails {
 struct DataMap {
   DataMap() : chunks(), content() {}
 
+  uint64_t size() const {
+    if (chunks.size() != 0)
+      return static_cast<uint64_t>(chunks[0].size) * (chunks.size() - 1) + chunks.rbegin()->size;
+    else
+      return content.size();
+  }
+
   bool operator==(const DataMap& other) const {
     if (!this)
       return false;
