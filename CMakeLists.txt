@@ -64,10 +64,7 @@ rename_outdated_built_exes()
 include(standard_flags)
 
 target_compile_definitions(maidsafe_encrypt PRIVATE $<$<BOOL:${OPENMP_FOUND}>:MAIDSAFE_OMP_ENABLED>)
-target_compile_options(maidsafe_encrypt PRIVATE
-  $<$<BOOL:${OPENMP_FOUND}>:${OpenMP_CXX_FLAGS}>
-  $<$<AND:$<BOOL:${UNIX}>,$<NOT:$<BOOL:${APPLE}>>>:-fno-stack-protector>
-)
+target_compile_options(maidsafe_encrypt PRIVATE $<$<BOOL:${OPENMP_FOUND}>:${OpenMP_CXX_FLAGS}>)
 target_compile_definitions(benchmark_encrypt PRIVATE USE_GTEST)
 
 
