@@ -28,13 +28,6 @@ project(encrypt)
 
 include(../../cmake_modules/standard_setup.cmake)
 
-include_directories(${common_SOURCE_DIR}/include)
-include_directories(${private_SOURCE_DIR}/include)
-include_directories(${passport_SOURCE_DIR}/include)
-include_directories(${rudp_SOURCE_DIR}/include)
-include_directories(${routing_SOURCE_DIR}/include)
-include_directories(${nfs_SOURCE_DIR}/include)
-
 
 #==================================================================================================#
 # Set up all files as GLOBs                                                                        #
@@ -47,14 +40,18 @@ list(REMOVE_ITEM EncryptTestsAllFiles "${PROJECT_SOURCE_DIR}/src/maidsafe/encryp
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(encrypt ${EncryptAllFiles})
+target_include_directories(maidsafe_encrypt PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_encrypt maidsafe_private)
+
 ms_add_executable(benchmark_encrypt "Tests/Encrypt"
                  ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/benchmark.cc
                  ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_main.cc)
+target_include_directories(benchmark_encrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(benchmark_encrypt maidsafe_encrypt gmock gtest)
 
-target_link_libraries(benchmark_encrypt maidsafe_encrypt)
 if(MaidsafeTesting)
   ms_add_executable(TESTencrypt "Tests/Encrypt"  ${EncryptTestsAllFiles})
+  target_include_directories(TESTencrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client)
 endif()
 
@@ -66,10 +63,12 @@ rename_outdated_built_exes()
 #==================================================================================================#
 include(standard_flags)
 
-if(UNIX AND NOT APPLE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
-endif()
-set_target_properties(benchmark_encrypt PROPERTIES COMPILE_DEFINITIONS "USE_GTEST")
+target_compile_definitions(maidsafe_encrypt PRIVATE $<$<BOOL:${OPENMP_FOUND}>:MAIDSAFE_OMP_ENABLED>)
+target_compile_options(maidsafe_encrypt PRIVATE
+  $<$<BOOL:${OPENMP_FOUND}>:${OpenMP_CXX_FLAGS}>
+  $<$<AND:$<BOOL:${UNIX}>,$<NOT:$<BOOL:${APPLE}>>>:-fno-stack-protector>
+)
+target_compile_definitions(benchmark_encrypt PRIVATE USE_GTEST)
 
 
 #==================================================================================================#

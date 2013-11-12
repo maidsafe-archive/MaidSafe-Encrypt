@@ -34,19 +34,15 @@
 #include <utility>
 #include <vector>
 
-#ifdef __MSVC__
-#pragma warning(push, 1)
-#endif
+// Include this first to avoid having to wrap the cryptopp includes in a pragma to disable warnings
+#include "maidsafe/common/crypto.h"  // NOLINT
+
 #include "cryptopp/aes.h"
 #include "cryptopp/gzip.h"
 #include "cryptopp/modes.h"
 #include "cryptopp/mqueue.h"
 #include "cryptopp/sha.h"
-#ifdef __MSVC__
-#pragma warning(pop)
-#endif
 
-#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/profiler.h"
 #include "maidsafe/common/utils.h"
