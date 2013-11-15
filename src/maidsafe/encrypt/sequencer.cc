@@ -22,6 +22,7 @@
 #include "maidsafe/encrypt/config.h"
 
 namespace maidsafe {
+
 namespace encrypt {
 
 namespace {
@@ -35,7 +36,7 @@ int Sequencer::Add(const char* data, uint32_t length, uint64_t position) {
     if (blocks_.empty() ||
         position > (*blocks_.rbegin()).first + Size((*blocks_.rbegin()).second)) {
       auto result = blocks_.insert(std::make_pair(position, GetNewByteArray(length)));
-      BOOST_ASSERT(result.second);
+      assert(result.second);
       if (MemCopy((*(result.first)).second, 0, data, length) != length) {
         LOG(kError) << "Error adding " << length << " bytes to sequencer at " << position;
         return kSequencerAddError;
@@ -61,7 +62,7 @@ int Sequencer::Add(const char* data, uint32_t length, uint64_t position) {
     bool reduced_upper(false);
 
     if (position > lower_start_position) {
-      BOOST_ASSERT(position - lower_start_position < std::numeric_limits<uint32_t>::max());
+      assert(position - lower_start_position < std::numeric_limits<uint32_t>::max());
       pre_overlap_size = static_cast<uint32_t>(position - lower_start_position);
       new_start_position = lower_start_position;
     }
@@ -79,8 +80,8 @@ int Sequencer::Add(const char* data, uint32_t length, uint64_t position) {
     uint32_t post_overlap_size(0);
 
     if ((position + length) < (upper_start_position + upper_size) && reduced_upper) {
-      BOOST_ASSERT(upper_size > post_overlap_posn - upper_start_position);
-      BOOST_ASSERT(upper_size - (post_overlap_posn - upper_start_position) <
+      assert(upper_size > post_overlap_posn - upper_start_position);
+      assert(upper_size - (post_overlap_posn - upper_start_position) <
                    std::numeric_limits<uint32_t>::max());
       post_overlap_size =
           upper_size - static_cast<uint32_t>(post_overlap_posn - upper_start_position);
@@ -109,7 +110,7 @@ int Sequencer::Add(const char* data, uint32_t length, uint64_t position) {
       ++upper_itr;
     blocks_.erase(lower_itr, upper_itr);
     auto result = blocks_.insert(std::make_pair(new_start_position, new_entry));
-    BOOST_ASSERT(result.second);
+    assert(result.second);
     static_cast<void>(result);
   }
   catch (const std::exception& e) {
@@ -194,7 +195,7 @@ void Sequencer::Truncate(uint64_t position) {
       uint32_t copied =
 #endif
           MemCopy(temp, 0, (*lower_itr).second.get(), reduced_size);
-      BOOST_ASSERT(reduced_size == copied);
+      assert(reduced_size == copied);
       (*lower_itr).second = temp;
     }
     // Move to first block past position
@@ -205,4 +206,5 @@ void Sequencer::Truncate(uint64_t position) {
 }
 
 }  // namespace encrypt
+
 }  // namespace maidsafe

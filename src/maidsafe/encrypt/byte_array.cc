@@ -20,6 +20,7 @@
 #include "maidsafe/common/log.h"
 
 namespace maidsafe {
+
 namespace encrypt {
 
 ByteArray GetNewByteArray(uint32_t size) {
@@ -48,4 +49,5 @@ uint32_t MemCopy(const ByteArray& destination, uint32_t destination_offset,
 }
 
 }  // namespace encrypt
+
 }  // namespace maidsafe

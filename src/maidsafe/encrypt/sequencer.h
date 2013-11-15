@@ -26,6 +26,7 @@
 #include "maidsafe/encrypt/byte_array.h"
 
 namespace maidsafe {
+
 namespace encrypt {
 
 typedef std::map<uint64_t, ByteArray> SequenceBlockMap;
@@ -63,6 +64,7 @@ class Sequencer {
 };
 
 }  // namespace encrypt
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ENCRYPT_SEQUENCER_H_

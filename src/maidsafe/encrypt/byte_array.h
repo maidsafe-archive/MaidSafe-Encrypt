@@ -24,6 +24,7 @@
 #include "cryptopp/config.h"
 
 namespace maidsafe {
+
 namespace encrypt {
 
 typedef std::shared_ptr<byte> ByteArray;
@@ -45,6 +46,7 @@ struct ByteArrayDeleter {
 };
 
 }  // namespace encrypt
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ENCRYPT_BYTE_ARRAY_H_
