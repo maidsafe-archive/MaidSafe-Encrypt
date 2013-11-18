@@ -19,8 +19,9 @@
 #ifndef MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
 #define MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
 
-#include <thread>
 #include <memory>
+#include <string>
+#include <thread>
 
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
@@ -40,7 +41,7 @@ class EncryptTestBase {
         num_procs_(num_procs),
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296), nullptr, *test_dir_),
         data_map_(std::make_shared<DataMap>()),
-        self_encryptor_(new SelfEncryptor(data_map_, local_store_, num_procs_)),
+        self_encryptor_(new SelfEncryptor(data_map_, local_store_, nullptr, num_procs_)),
         original_(),
         decrypted_() {}
 

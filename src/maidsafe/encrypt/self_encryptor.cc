@@ -191,6 +191,7 @@ void DecryptDataMap(const Identity& parent_id, const Identity& this_id,
 }
 
 SelfEncryptor::SelfEncryptor(DataMapPtr data_map, data_store::DataBuffer<std::string>& buffer,
+                             std::function<NonEmptyString(const std::string&)> get_from_store,
                              int num_procs)
     : data_map_(data_map ? data_map : std::make_shared<DataMap>()),
       original_data_map_(std::make_shared<DataMap>(*data_map)),
@@ -208,6 +209,7 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map, data_store::DataBuffer<std::st
       chunk0_raw_(),
       chunk1_raw_(),
       buffer_(buffer),
+      get_from_store_(get_from_store),
       current_position_(0),
       prepared_for_writing_(false),
       flushed_(true),
@@ -572,9 +574,17 @@ int SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
     content = buffer_.Get(data_map_->chunks[chunk_num].hash);
   }
   catch (...) {
-    LOG(kError) << "Failed to get local data for "
-                << Base64Encode(data_map_->chunks[chunk_num].hash);
-    return kMissingChunk;
+    LOG(kInfo) << "Failed to get data for " << Base64Encode(data_map_->chunks[chunk_num].hash)
+                << " from buffer, trying functor.";
+    try {
+      content = get_from_store_(data_map_->chunks[chunk_num].hash);
+      buffer_.Store(data_map_->chunks[chunk_num].hash, content);
+    }
+    catch(const std::exception& e) {
+      LOG(kError) << "Failed to get data for " << Base64Encode(data_map_->chunks[chunk_num].hash)
+                  << " - " << e.what();
+      return kMissingChunk;
+    }
   }
 
   if (content.string().empty()) {
@@ -749,13 +759,13 @@ int SelfEncryptor::EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length)
     data_map_->chunks[chunk_num]
         .hash.assign(reinterpret_cast<char*>(post_hash.get()), crypto::SHA512::DIGESTSIZE);
 
-    data_map_->chunks[chunk_num].buffer_state = ChunkDetails::kPending;
+    data_map_->chunks[chunk_num].storage_state = ChunkDetails::kPending;
     try {
       buffer_.Store(data_map_->chunks[chunk_num].hash, NonEmptyString(chunk_content));
     }
     catch (...) {
       LOG(kError) << "Could not store " << Base64Substr(data_map_->chunks[chunk_num].hash);
-      data_map_->chunks[chunk_num].buffer_state = ChunkDetails::kUnstored;
+      data_map_->chunks[chunk_num].storage_state = ChunkDetails::kUnstored;
       result = kFailedToStoreChunk;
     }
 //    DebugPrint(true, chunk_num, pad, key, iv, data, length, chunk_content);
@@ -1310,19 +1320,6 @@ void SelfEncryptor::ReadInProcessData(char * data, uint32_t length, uint64_t pos
     sequence_block_size = Size(sequence_block.second);
   }
 }
-
-//void SelfEncryptor::DeleteAllChunks() {
-//  SCOPED_PROFILE
-//  for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-//    try {
-//      buffer_.Delete(data_map_->chunks[i].hash);
-//    }
-//    catch (...) {
-//    }
-//  }
-//  std::lock_guard<std::mutex> data_unique_guard(data_mutex_);
-//  data_map_->chunks.clear();
-//}
 
 bool SelfEncryptor::Truncate(uint64_t position) {
   SCOPED_PROFILE

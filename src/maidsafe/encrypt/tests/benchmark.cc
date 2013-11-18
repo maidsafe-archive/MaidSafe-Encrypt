@@ -98,11 +98,12 @@ TEST(MassiveFile, FUNC_MemCheck) {
   int kNumProcs(8);
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path store_path(*test_dir / "data_store");
-  data_store::LocalStore local_store(store_path, DiskUsage(uint64_t(4294967296)));
+  data_store::DataBuffer<std::string> buffer(MemoryUsage(4294967296U),
+      DiskUsage(4294967296U), nullptr, store_path);
 
   DataMapPtr data_map(new DataMap);
-  std::unique_ptr<SelfEncryptor<data_store::LocalStore>> self_encryptor(
-      new SelfEncryptor<data_store::LocalStore>(data_map, local_store, kNumProcs));
+  std::unique_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map, buffer,
+                                                                  nullptr, kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
   boost::scoped_array<char> original(new char[kDataSize]);

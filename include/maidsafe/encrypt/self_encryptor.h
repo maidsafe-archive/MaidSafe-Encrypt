@@ -47,11 +47,11 @@ void DecryptDataMap(const Identity& parent_id, const Identity& this_id,
 class SelfEncryptor {
  public:
   SelfEncryptor(std::shared_ptr<DataMap> data_map, data_store::DataBuffer<std::string>& buffer,
+                std::function<NonEmptyString(const std::string&)> get_from_store,
                 int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char* data, uint32_t length, uint64_t position);
   bool Read(char* data, uint32_t length, uint64_t position);
-//  void DeleteAllChunks();
   // Can truncate up or down
   bool Truncate(uint64_t position);
   // Forces all buffered data to be encrypted.  Missing portions of the file are filled with '\0's
@@ -148,6 +148,7 @@ class SelfEncryptor {
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
   data_store::DataBuffer<std::string>& buffer_;
+  std::function<NonEmptyString(const std::string&)> get_from_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
   std::unique_ptr<char[]> read_cache_;
