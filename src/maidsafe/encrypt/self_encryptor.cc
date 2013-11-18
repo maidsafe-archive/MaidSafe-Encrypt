@@ -578,7 +578,6 @@ int SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
                 << " from buffer, trying functor.";
     try {
       content = get_from_store_(data_map_->chunks[chunk_num].hash);
-      buffer_.Store(data_map_->chunks[chunk_num].hash, content);
     }
     catch(const std::exception& e) {
       LOG(kError) << "Failed to get data for " << Base64Encode(data_map_->chunks[chunk_num].hash)

@@ -98,8 +98,14 @@ TEST(MassiveFile, FUNC_MemCheck) {
   int kNumProcs(8);
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path store_path(*test_dir / "data_store");
-  data_store::DataBuffer<std::string> buffer(MemoryUsage(4294967296U),
-      DiskUsage(4294967296U), nullptr, store_path);
+  data_store::DataBuffer<std::string> buffer(
+      MemoryUsage(4294967296U),
+      DiskUsage(4294967296U),
+      [](const std::string& name, const NonEmptyString&) {
+        LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
+        ThrowError(CommonErrors::cannot_exceed_limit);
+      },
+      store_path);
 
   DataMapPtr data_map(new DataMap);
   std::unique_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map, buffer,

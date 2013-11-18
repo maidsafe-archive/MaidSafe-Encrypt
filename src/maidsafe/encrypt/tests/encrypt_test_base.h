@@ -39,7 +39,12 @@ class EncryptTestBase {
   explicit EncryptTestBase(int num_procs)
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
-        local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296), nullptr, *test_dir_),
+        local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
+                     [](const std::string& name, const NonEmptyString&) {
+                        LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
+                        ThrowError(CommonErrors::cannot_exceed_limit);
+                      },
+                      *test_dir_),
         data_map_(std::make_shared<DataMap>()),
         self_encryptor_(new SelfEncryptor(data_map_, local_store_, nullptr, num_procs_)),
         original_(),
