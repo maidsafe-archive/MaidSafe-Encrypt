@@ -57,9 +57,9 @@ namespace {
 typedef std::pair<uint32_t, uint32_t> SizeAndOffset;
 const int g_num_procs(Concurrency());
 
-uint64_t TotalSize(DataMapPtr data_map) {
-  uint64_t size(data_map->chunks.empty() ? data_map->content.size() : 0);
-  for (auto& elem : data_map->chunks)
+uint64_t TotalSize(const DataMap& data_map) {
+  uint64_t size(data_map.chunks.empty() ? data_map.content.size() : 0);
+  for (auto& elem : data_map.chunks)
     size += (elem).size;
   return size;
 }
@@ -166,15 +166,15 @@ TEST_P(BasicOffsetTest, BEH_EncryptDecrypt) {
   self_encryptor_.reset(new SelfEncryptor(data_map_, local_store_, nullptr, num_procs_));
   EXPECT_EQ(kOffset_ + kDataSize_, TotalSize(data_map_));
   if (test_file_size_ == kTiny) {
-    ASSERT_EQ(kOffset_ + kDataSize_, data_map_->content.size());
-    EXPECT_TRUE(data_map_->chunks.empty());
+    ASSERT_EQ(kOffset_ + kDataSize_, data_map_.content.size());
+    EXPECT_TRUE(data_map_.chunks.empty());
     for (uint32_t i = 0; i != kOffset_; ++i)
-      ASSERT_EQ(0, data_map_->content[i]) << "i == " << i;
+      ASSERT_EQ(0, data_map_.content[i]) << "i == " << i;
     for (uint32_t i = 0; i != kDataSize_; ++i)
-      ASSERT_EQ(original_[i], data_map_->content[kOffset_ + i]) << "i == " << i;
+      ASSERT_EQ(original_[i], data_map_.content[kOffset_ + i]) << "i == " << i;
   } else {
-    EXPECT_TRUE(data_map_->content.empty());
-    EXPECT_FALSE(data_map_->chunks.empty());
+    EXPECT_TRUE(data_map_.content.empty());
+    EXPECT_FALSE(data_map_.chunks.empty());
   }
 
   decrypted_.reset(new char[kOffset_ + kDataSize_]);
@@ -453,7 +453,7 @@ TEST_F(BasicTest, BEH_NewRead) {
     ASSERT_EQ(original_[index], decrypted_[index]) << "difference at " << index;
 
   // use file smaller than the cache size
-  DataMapPtr data_map2(new DataMap);
+  DataMap data_map2;
   const uint32_t kDataSize2(kDefaultChunkSize * 5);
   std::string content2(RandomString(kDataSize2));
   boost::scoped_array<char> original2(new char[kDataSize2]);
@@ -534,7 +534,7 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
 
   SelfEncryptor self_encryptor(data_map_, local_store_, nullptr, num_procs_);
   EXPECT_EQ(kDataSize_, TotalSize(self_encryptor.data_map()));
-  EXPECT_TRUE(self_encryptor.data_map()->content.empty());
+  EXPECT_TRUE(self_encryptor.data_map().content.empty());
   memset(decrypted_.get(), 1, kDataSize_);
   EXPECT_TRUE(self_encryptor.Read(decrypted_.get(), kDataSize_, 0));
   for (uint32_t i(0); i != kDataSize_; ++i) {
@@ -624,9 +624,9 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
   {
     SelfEncryptor self_encryptor(data_map_, local_store_, nullptr, num_procs_);
     // Check data_map values again after destruction...
-    //    EXPECT_EQ(44, self_encryptor.data_map()->chunks.size());
+    //    EXPECT_EQ(44, self_encryptor.data_map().chunks.size());
     EXPECT_EQ(size * 40 + max_length * 10, TotalSize(self_encryptor.data_map()));
-    EXPECT_EQ(0, self_encryptor.data_map()->content.size());
+    EXPECT_EQ(0, self_encryptor.data_map().content.size());
 
     std::array<std::string, parts> recovered;
     for (size_t i = 0; i != parts; ++i) {
@@ -719,14 +719,14 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
                   string_array[index_array[kGapIndex]].data(), kSize);
   // Unknown number of chunks and data map size...
   // No content yet...
-  EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
+  EXPECT_TRUE(self_encryptor_->data_map().content.empty());
   self_encryptor_->Flush();
 
   SelfEncryptor self_encryptor(data_map_, local_store_, nullptr, num_procs_);
   // Check data_map values again after destruction...
-  EXPECT_EQ(10, self_encryptor.data_map()->chunks.size());
+  EXPECT_EQ(10, self_encryptor.data_map().chunks.size());
   EXPECT_EQ(kParts * kSize, TotalSize(self_encryptor.data_map()));
-  EXPECT_TRUE(self_encryptor.data_map()->content.empty());
+  EXPECT_TRUE(self_encryptor.data_map().content.empty());
 
   std::string written;
   written.resize(kSize);
@@ -794,7 +794,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize, self_encryptor_->size());
   EXPECT_EQ(kSize, TotalSize(data_map_));
-  EXPECT_EQ(kSize, data_map_->content.size());
+  EXPECT_EQ(kSize, data_map_.content.size());
   decrypted.assign(decrypted.size(), 1);
 
   // Append a single char and read
@@ -813,7 +813,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 1, self_encryptor_->size());
   EXPECT_EQ(kSize + 1, TotalSize(data_map_));
-  EXPECT_EQ(kSize + 1, data_map_->content.size());
+  EXPECT_EQ(kSize + 1, data_map_.content.size());
 
   // Append another single char and read
   EXPECT_TRUE(self_encryptor_->Write(&data, sizeof(data), kSize + 1));
@@ -830,7 +830,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 2, self_encryptor_->size());
   EXPECT_EQ(kSize + 2, TotalSize(data_map_));
-  EXPECT_TRUE(data_map_->content.empty());
+  EXPECT_TRUE(data_map_.content.empty());
 
   // "Right-shift" the data by 1 byte
   EXPECT_TRUE(self_encryptor_->Write(const_cast<char*>(original.data()), kSize + 1, 1));
@@ -846,7 +846,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 2, self_encryptor_->size());
   EXPECT_EQ(kSize + 2, TotalSize(data_map_));
-  EXPECT_TRUE(data_map_->content.empty());
+  EXPECT_TRUE(data_map_.content.empty());
 
   // Append large block and read
   const uint32_t kNewSize(3 * kDefaultChunkSize);
@@ -865,7 +865,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 2 + kNewSize, self_encryptor_->size());
   EXPECT_EQ(kSize + 2 + kNewSize, TotalSize(data_map_));
-  EXPECT_TRUE(data_map_->content.empty());
+  EXPECT_TRUE(data_map_.content.empty());
 
   // Append a single char and read
   EXPECT_TRUE(self_encryptor_->Write(&data, sizeof(data), kSize + 2 + kNewSize));
@@ -884,7 +884,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 2 + kNewSize + 1, self_encryptor_->size());
   EXPECT_EQ(kSize + 2 + kNewSize + 1, TotalSize(data_map_));
-  EXPECT_TRUE(data_map_->content.empty());
+  EXPECT_TRUE(data_map_.content.empty());
 }
 
 TEST_F(BasicTest, BEH_3SmallChunkRewrite) {
@@ -981,7 +981,7 @@ TEST_F(BasicTest, BEH_DeleteStoredChunkFromDisk) {
                                     static_cast<uint32_t>(recovered.size()), 0));
   }
 
-  local_store_.Delete(data_map_->chunks[0].hash);
+  local_store_.Delete(data_map_.chunks[0].hash);
 
   {
     SelfEncryptor self_encryptor(data_map_, local_store_, nullptr, num_procs_);
@@ -1041,37 +1041,37 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
   GetEncryptionResult(&enc_res_C1, prehash, prehash_final, prehash, pre_enc_chunk, chunk_size);
 
   // Check results
-  EXPECT_EQ(num_chunks, self_encryptor_->data_map()->chunks.size());
-  EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
+  EXPECT_EQ(num_chunks, self_encryptor_->data_map().chunks.size());
+  EXPECT_TRUE(self_encryptor_->data_map().content.empty());
   EXPECT_EQ(file_size, TotalSize(self_encryptor_->data_map()));
   EXPECT_EQ(file_size, self_encryptor_->size());
 
   // Prehash checks
   for (uint32_t i = 0; i != num_chunks - 1; ++i) {
     for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
-      ASSERT_EQ(prehash[j], self_encryptor_->data_map()->chunks[i].pre_hash[j])
+      ASSERT_EQ(prehash[j], self_encryptor_->data_map().chunks[i].pre_hash[j])
           << "failed at chunk " << i << " pre hash " << j;
     }
   }
   for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
-    ASSERT_EQ(prehash_final[j], self_encryptor_->data_map()->chunks[num_chunks - 1].pre_hash[j])
+    ASSERT_EQ(prehash_final[j], self_encryptor_->data_map().chunks[num_chunks - 1].pre_hash[j])
         << "failed at final chunk pre hash " << j;
   }
 
   // enc hash checks
   for (int i = 0; i != crypto::SHA512::DIGESTSIZE; ++i) {
-    ASSERT_EQ(enc_res_C0[i], static_cast<byte>(self_encryptor_->data_map()->chunks[0].hash[i]))
+    ASSERT_EQ(enc_res_C0[i], static_cast<byte>(self_encryptor_->data_map().chunks[0].hash[i]))
         << "failed at chunk 0 post hash : " << i;
-    ASSERT_EQ(enc_res_C1[i], static_cast<byte>(self_encryptor_->data_map()->chunks[1].hash[i]))
+    ASSERT_EQ(enc_res_C1[i], static_cast<byte>(self_encryptor_->data_map().chunks[1].hash[i]))
         << "failed at chunk 1 post hash : " << i;
     ASSERT_EQ(enc_res_final[i],
-              static_cast<byte>(self_encryptor_->data_map()->chunks[num_chunks - 1].hash[i]))
+              static_cast<byte>(self_encryptor_->data_map().chunks[num_chunks - 1].hash[i]))
         << "failed at final chunk post hash : " << i;
   }
 
   for (uint32_t i = 2; i != num_chunks - 1; ++i) {
     for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
-      ASSERT_EQ(enc_res[j], static_cast<byte>(self_encryptor_->data_map()->chunks[i].hash[j]))
+      ASSERT_EQ(enc_res[j], static_cast<byte>(self_encryptor_->data_map().chunks[i].hash[j]))
           << "failed at chunk " << i << " post hash : " << j;
     }
   }
@@ -1283,7 +1283,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
 
   {
     // Out Process random write/read access
-    DataMapPtr data_map(new DataMap);
+    DataMap data_map;
     for (size_t i = 0; i < max_variation.size(); ++i) {
       uint32_t num_tries = num_of_tries[i];
       uint32_t variation = max_variation[i];
@@ -1325,14 +1325,11 @@ TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
   asymm::CipherText encrypted_data_map = EncryptDataMap(kParentId, kThisId, data_map_);
   EXPECT_FALSE(encrypted_data_map.string().empty());
 
-  DataMapPtr retrieved_data_map(new DataMap);
-
-  EXPECT_NO_THROW(
-      DecryptDataMap(kParentId, kThisId, encrypted_data_map.string(), retrieved_data_map));
-  ASSERT_EQ(data_map_->chunks.size(), retrieved_data_map->chunks.size());
-  auto original_itr(data_map_->chunks.begin()), retrieved_itr(retrieved_data_map->chunks.begin());
+  DataMap retrieved_data_map(DecryptDataMap(kParentId, kThisId, encrypted_data_map.string()));
+  ASSERT_EQ(data_map_.chunks.size(), retrieved_data_map.chunks.size());
+  auto original_itr(data_map_.chunks.begin()), retrieved_itr(retrieved_data_map.chunks.begin());
   std::string original_pre_hash(64, 0), retrieved_pre_hash(64, 0);
-  for (; original_itr != data_map_->chunks.end(); ++original_itr, ++retrieved_itr) {
+  for (; original_itr != data_map_.chunks.end(); ++original_itr, ++retrieved_itr) {
     ASSERT_EQ((*original_itr).hash, (*retrieved_itr).hash);
     memcpy(&original_pre_hash[0], &(*original_itr).pre_hash, 64);
     memcpy(&retrieved_pre_hash[0], &(*retrieved_itr).pre_hash, 64);
@@ -1343,9 +1340,7 @@ TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
 }
 
 TEST_F(BasicTest, BEH_DifferentDataMapSameChunk) {
-  DataMapPtr data_map_1(new DataMap);
-  DataMapPtr data_map_2(new DataMap);
-
+  DataMap data_map_1, data_map_2;
   {
     SelfEncryptor self_encryptor_1(data_map_1, local_store_, nullptr, num_procs_);
     SelfEncryptor self_encryptor_2(data_map_2, local_store_, nullptr, num_procs_);

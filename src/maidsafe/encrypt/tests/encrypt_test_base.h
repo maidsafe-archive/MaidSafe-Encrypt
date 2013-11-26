@@ -45,7 +45,7 @@ class EncryptTestBase {
                         ThrowError(CommonErrors::cannot_exceed_limit);
                       },
                       *test_dir_),
-        data_map_(std::make_shared<DataMap>()),
+        data_map_(),
         self_encryptor_(new SelfEncryptor(data_map_, local_store_, nullptr, num_procs_)),
         original_(),
         decrypted_() {}
@@ -56,7 +56,7 @@ class EncryptTestBase {
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
   data_store::DataBuffer<std::string> local_store_;
-  std::shared_ptr<DataMap> data_map_;
+  DataMap data_map_;
   std::unique_ptr<SelfEncryptor> self_encryptor_;
   std::unique_ptr<char[]> original_, decrypted_;
 };

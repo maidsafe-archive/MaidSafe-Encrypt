@@ -107,7 +107,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
       },
       store_path);
 
-  DataMapPtr data_map(new DataMap);
+  DataMap data_map;
   std::unique_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map, buffer,
                                                                   nullptr, kNumProcs));
 

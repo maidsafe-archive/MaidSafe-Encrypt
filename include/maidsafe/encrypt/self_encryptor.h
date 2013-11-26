@@ -39,14 +39,14 @@ namespace encrypt {
 class Sequencer;
 
 crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& this_id,
-                                  std::shared_ptr<DataMap> data_map);
+                                  const DataMap& data_map);
 
-void DecryptDataMap(const Identity& parent_id, const Identity& this_id,
-                    const std::string& encrypted_data_map, std::shared_ptr<DataMap> data_map);
+DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
+                       const std::string& encrypted_data_map);
 
 class SelfEncryptor {
  public:
-  SelfEncryptor(std::shared_ptr<DataMap> data_map, data_store::DataBuffer<std::string>& buffer,
+  SelfEncryptor(DataMap& data_map, data_store::DataBuffer<std::string>& buffer,
                 std::function<NonEmptyString(const std::string&)> get_from_store,
                 int num_procs = 0);
   ~SelfEncryptor();
@@ -60,7 +60,7 @@ class SelfEncryptor {
   uint64_t size() const {
     return (file_size_ < truncated_file_size_) ? truncated_file_size_ : file_size_;
   }
-  std::shared_ptr<DataMap> data_map() const { return data_map_; }
+  DataMap& data_map() const { return data_map_; }
 
  private:
   SelfEncryptor(const SelfEncryptor&);
@@ -135,8 +135,8 @@ class SelfEncryptor {
   bool TruncateDown(uint64_t position);
   void DeleteChunk(uint32_t chunk_num);
 
-  std::shared_ptr<DataMap> data_map_;
-  std::shared_ptr<DataMap> original_data_map_;
+  DataMap& data_map_;
+  DataMap original_data_map_;
   std::unique_ptr<Sequencer> sequencer_;
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;
