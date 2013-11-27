@@ -69,6 +69,8 @@ struct DataMap {
         static_cast<uint64_t>(chunks[0].size) * (chunks.size() - 1) + chunks.rbegin()->size;
   }
 
+  bool empty() const { return chunks.empty() && content.empty(); }
+
   bool operator==(const DataMap& other) const {
     if (content != other.content || chunks.size() != other.chunks.size())
       return false;

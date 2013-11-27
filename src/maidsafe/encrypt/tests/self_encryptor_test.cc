@@ -778,6 +778,43 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
   }
 }
 
+TEST_F(BasicTest, BEH_DataMapSizes) {
+  EXPECT_EQ(0, data_map_.size());
+  EXPECT_TRUE(data_map_.empty());
+
+  std::string content(RandomString(1));
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, nullptr, num_procs_);
+    EXPECT_TRUE(self_encryptor.Write(content.data(), static_cast<uint32_t>(content.size()), 0));
+  }
+  EXPECT_EQ(content.size(), data_map_.size());
+  EXPECT_FALSE(data_map_.empty());
+
+  content.append(RandomString((3 * kMinChunkSize) - 3));
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, nullptr, num_procs_);
+    EXPECT_TRUE(self_encryptor.Write(content.data(), static_cast<uint32_t>(content.size()), 0));
+  }
+  EXPECT_EQ(content.size(), data_map_.size());
+  EXPECT_FALSE(data_map_.empty());
+
+  content.append(RandomString(3));
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, nullptr, num_procs_);
+    EXPECT_TRUE(self_encryptor.Write(content.data(), static_cast<uint32_t>(content.size()), 0));
+  }
+  EXPECT_EQ(content.size(), data_map_.size());
+  EXPECT_FALSE(data_map_.empty());
+
+  content.append(RandomString(3 * kDefaultChunkSize));
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, nullptr, num_procs_);
+    EXPECT_TRUE(self_encryptor.Write(content.data(), static_cast<uint32_t>(content.size()), 0));
+  }
+  EXPECT_EQ(content.size(), data_map_.size());
+  EXPECT_FALSE(data_map_.empty());
+}
+
 TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   // Write and read small amount
   const uint32_t kSize = (3 * kMinChunkSize) - 2;
