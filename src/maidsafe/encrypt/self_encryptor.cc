@@ -572,13 +572,13 @@ int SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
     content = buffer_.Get(data_map_.chunks[chunk_num].hash);
   }
   catch (...) {
-    LOG(kInfo) << "Failed to get data for " << Base64Encode(data_map_.chunks[chunk_num].hash)
+    LOG(kInfo) << "Failed to get data for " << HexSubstr(data_map_.chunks[chunk_num].hash)
                 << " from buffer, trying functor.";
     try {
       content = get_from_store_(data_map_.chunks[chunk_num].hash);
     }
     catch(const std::exception& e) {
-      LOG(kError) << "Failed to get data for " << Base64Encode(data_map_.chunks[chunk_num].hash)
+      LOG(kError) << "Failed to get data for " << HexSubstr(data_map_.chunks[chunk_num].hash)
                   << " - " << e.what();
       return kMissingChunk;
     }
