@@ -109,7 +109,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
 
   DataMap data_map;
   std::unique_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map, buffer,
-                                                                  nullptr, kNumProcs));
+      [&buffer](const std::string& name) { return buffer.Get(name); }, kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
   boost::scoped_array<char> original(new char[kDataSize]);

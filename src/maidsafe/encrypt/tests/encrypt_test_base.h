@@ -46,7 +46,8 @@ class EncryptTestBase {
                       },
                       *test_dir_),
         data_map_(),
-        self_encryptor_(new SelfEncryptor(data_map_, local_store_, nullptr, num_procs_)),
+        get_from_store_([this](const std::string& name) { return local_store_.Get(name); }),
+        self_encryptor_(new SelfEncryptor(data_map_, local_store_, get_from_store_, num_procs_)),
         original_(),
         decrypted_() {}
 
@@ -57,6 +58,7 @@ class EncryptTestBase {
   int num_procs_;
   data_store::DataBuffer<std::string> local_store_;
   DataMap data_map_;
+  std::function<NonEmptyString(const std::string&)> get_from_store_;
   std::unique_ptr<SelfEncryptor> self_encryptor_;
   std::unique_ptr<char[]> original_, decrypted_;
 };
