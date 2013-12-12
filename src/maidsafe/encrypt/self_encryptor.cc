@@ -27,7 +27,6 @@
 #include <set>
 #include <tuple>
 #include <utility>
-#include <vector>
 
 #ifdef __MSVC__
 #pragma warning(push, 1)
@@ -1416,6 +1415,20 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
   }
   catch (...) {
   }
+}
+
+std::vector<std::string> SelfEncryptor::NewChunks() const {
+  std::vector<std::string> current;
+  std::lock_guard<std::mutex> data_guard(data_mutex_);
+  for (const auto& chunk : data_map_.chunks) {
+    if (std::none_of(std::begin(original_data_map_.chunks), std::end(original_data_map_.chunks),
+                     [&chunk](const ChunkDetails& original_chunk) {
+                         return chunk.hash == original_chunk.hash;
+                     })) {
+      current.push_back(chunk.hash);
+    }
+  }
+  return current;
 }
 
 }  // namespace encrypt

@@ -24,6 +24,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
@@ -56,6 +57,8 @@ class SelfEncryptor {
   bool Truncate(uint64_t position);
   // Forces all buffered data to be encrypted.  Missing portions of the file are filled with '\0's
   bool Flush();
+  // Returns all chunks which are currently listed in the DM, but which weren't in the DM originally
+  std::vector<std::string> NewChunks() const;
 
   uint64_t size() const {
     return (file_size_ < truncated_file_size_) ? truncated_file_size_ : file_size_;
@@ -159,7 +162,7 @@ class SelfEncryptor {
   uint32_t buffer_length_;
   uint64_t last_read_position_;
   const uint32_t kMaxBufferSize_;
-  std::mutex data_mutex_;
+  mutable std::mutex data_mutex_;
 };
 
 }  // namespace encrypt
