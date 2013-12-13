@@ -57,13 +57,12 @@ class SelfEncryptor {
   bool Truncate(uint64_t position);
   // Forces all buffered data to be encrypted.  Missing portions of the file are filled with '\0's
   bool Flush();
-  // Returns all chunks which are currently listed in the DM, but which weren't in the DM originally
-  std::vector<std::string> NewChunks() const;
 
   uint64_t size() const {
     return (file_size_ < truncated_file_size_) ? truncated_file_size_ : file_size_;
   }
-  DataMap& data_map() const { return data_map_; }
+  const DataMap& data_map() const { return data_map_; }
+  const DataMap& original_data_map() const { return kOriginalDataMap_; }
 
  private:
   SelfEncryptor(const SelfEncryptor&);
@@ -139,7 +138,7 @@ class SelfEncryptor {
   void DeleteChunk(uint32_t chunk_num);
 
   DataMap& data_map_;
-  DataMap original_data_map_;
+  DataMap kOriginalDataMap_;
   std::unique_ptr<Sequencer> sequencer_;
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;

@@ -193,7 +193,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, data_store::DataBuffer<std::stri
                              std::function<NonEmptyString(const std::string&)> get_from_store,
                              int num_procs)
     : data_map_(data_map),
-      original_data_map_(data_map),
+      kOriginalDataMap_(data_map),
       sequencer_(new Sequencer),
       kDefaultByteArraySize_(num_procs == 0 ? kDefaultChunkSize * Concurrency()
                                             : kDefaultChunkSize * num_procs),
@@ -1415,20 +1415,6 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
   }
   catch (...) {
   }
-}
-
-std::vector<std::string> SelfEncryptor::NewChunks() const {
-  std::vector<std::string> current;
-  std::lock_guard<std::mutex> data_guard(data_mutex_);
-  for (const auto& chunk : data_map_.chunks) {
-    if (std::none_of(std::begin(original_data_map_.chunks), std::end(original_data_map_.chunks),
-                     [&chunk](const ChunkDetails& original_chunk) {
-                         return chunk.hash == original_chunk.hash;
-                     })) {
-      current.push_back(chunk.hash);
-    }
-  }
-  return current;
 }
 
 }  // namespace encrypt
