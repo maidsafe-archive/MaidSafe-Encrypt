@@ -32,14 +32,15 @@ include(../../cmake_modules/standard_setup.cmake)
 #==================================================================================================#
 # Set up all files as GLOBs                                                                        #
 #==================================================================================================#
-glob_dir(Encrypt ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt Encrypt)
-glob_dir(EncryptTests ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests Tests)
+ms_glob_dir(Encrypt ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt Encrypt)
+ms_glob_dir(EncryptTests ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests Tests)
 list(REMOVE_ITEM EncryptTestsAllFiles "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/benchmark.cc")
+
 
 #==================================================================================================#
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
-ms_add_static_library(encrypt ${EncryptAllFiles})
+ms_add_static_library(maidsafe_encrypt ${EncryptAllFiles})
 target_include_directories(maidsafe_encrypt PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(maidsafe_encrypt maidsafe_private)
 
@@ -55,7 +56,7 @@ if(MaidsafeTesting)
   target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client)
 endif()
 
-rename_outdated_built_exes()
+ms_rename_outdated_built_exes()
 
 
 #==================================================================================================#
@@ -72,8 +73,8 @@ target_compile_definitions(benchmark_encrypt PRIVATE USE_GTEST)
 # Tests                                                                                            #
 #==================================================================================================#
 if(MaidsafeTesting)
-  add_style_test()
-  add_gtests(TESTencrypt)
-  add_project_experimental()
-  test_summary_output()
+  ms_add_style_test()
+  ms_add_gtests(TESTencrypt)
+  ms_add_project_experimental()
+  ms_test_summary_output()
 endif()
