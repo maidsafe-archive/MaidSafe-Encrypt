@@ -223,7 +223,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, data_store::DataBuffer<std::stri
       data_mutex_() {
   if (!get_from_store) {
     LOG(kError) << "Need to have a non-null get_from_store functor.";
-    ThrowError(CommonErrors::invalid_parameter);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
   if (data_map.chunks.empty()) {
     file_size_ = data_map.content.size();

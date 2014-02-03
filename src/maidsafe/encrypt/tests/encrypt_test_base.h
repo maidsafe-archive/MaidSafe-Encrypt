@@ -42,7 +42,7 @@ class EncryptTestBase {
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
                      [](const std::string& name, const NonEmptyString&) {
                         LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
-                        ThrowError(CommonErrors::cannot_exceed_limit);
+                        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
                       },
                       *test_dir_),
         data_map_(),

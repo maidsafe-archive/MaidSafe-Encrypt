@@ -44,7 +44,7 @@ void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map)
     }
   }
   if (!proto_data_map.SerializeToString(&serialised_data_map))
-    ThrowError(CommonErrors::serialisation_error);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::serialisation_error));
 }
 
 void ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_map) {
@@ -57,7 +57,7 @@ void ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_
         temp.pre_hash[ch] = pre_hash.at(ch);
     } else {
       data_map.chunks.clear();
-      ThrowError(CommonErrors::invalid_string_size);
+      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_string_size));
     }
     temp.size = proto_data_map.chunk_details(n).size();
     temp.pre_hash_state =
@@ -71,7 +71,7 @@ void ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_
 void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map) {
   protobuf::DataMap proto_data_map;
   if (!proto_data_map.ParseFromString(serialised_data_map))
-    ThrowError(CommonErrors::parsing_error);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
 
   if (proto_data_map.has_content() && proto_data_map.chunk_details_size() != 0) {
     data_map.content = proto_data_map.content();

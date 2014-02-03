@@ -103,7 +103,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
       DiskUsage(4294967296U),
       [](const std::string& name, const NonEmptyString&) {
         LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
-        ThrowError(CommonErrors::cannot_exceed_limit);
+        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
       },
       store_path);
 
