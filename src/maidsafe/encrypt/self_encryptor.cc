@@ -40,16 +40,22 @@
 #pragma warning(pop)
 #endif
 
+#include "maidsafe/common/error.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/profiler.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/config.h"
+#include "maidsafe/encrypt/data_map.pb.h"
 #include "maidsafe/encrypt/sequencer.h"
 
 namespace maidsafe {
 
 namespace encrypt {
+
+const EncryptionAlgorithm kSelfEncryptionVersion = EncryptionAlgorithm::kSelfEncryptionVersion0;
+const EncryptionAlgorithm kDataMapEncryptionVersion =
+    EncryptionAlgorithm::kDataMapEncryptionVersion0;
 
 namespace {
 
@@ -117,6 +123,39 @@ void DebugPrint(bool encrypting,
 }
 */
 
+DataMap DecryptUsingVersion0(const Identity& parent_id, const Identity& this_id,
+                             const protobuf::EncryptedDataMap& protobuf_encrypted_data_map) {
+  if (protobuf_encrypted_data_map.data_map_encryption_version() !=
+      static_cast<uint32_t>(EncryptionAlgorithm::kDataMapEncryptionVersion0)) {
+    BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::invalid_encryption_version));
+  }
+
+  size_t inputs_size(parent_id.string().size() + this_id.string().size());
+  ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
+      xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
+  CryptoPP::SHA512().CalculateDigest(
+      enc_hash.get(), reinterpret_cast<const byte*>((parent_id.string() + this_id.string()).data()),
+      inputs_size);
+  CryptoPP::SHA512().CalculateDigest(
+      xor_hash.get(), reinterpret_cast<const byte*>((this_id.string() + parent_id.string()).data()),
+      inputs_size);
+
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(enc_hash.get(), crypto::AES256_KeySize,
+                                                          enc_hash.get() + crypto::AES256_KeySize);
+
+  std::string serialised_data_map;
+  CryptoPP::StringSource filter(
+      protobuf_encrypted_data_map.contents(), true,
+      new XORFilter(
+          new CryptoPP::StreamTransformationFilter(
+              decryptor, new CryptoPP::Gunzip(new CryptoPP::StringSink(serialised_data_map))),
+          xor_hash.get(), crypto::SHA512::DIGESTSIZE));
+
+  DataMap data_map;
+  ParseDataMap(serialised_data_map, data_map);
+  return data_map;
+}
+
 }  // unnamed namespace
 
 crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& this_id,
@@ -124,7 +163,7 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& thi
   assert(parent_id.string().size() == static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   assert(this_id.string().size() == static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
 
-  std::string serialised_data_map, encrypted_data_map;
+  std::string serialised_data_map;
   SerialiseDataMap(data_map, serialised_data_map);
 
   ByteArray array_data_map(GetNewByteArray(static_cast<uint32_t>(serialised_data_map.size())));
@@ -144,17 +183,20 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& thi
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(enc_hash.get(), crypto::AES256_KeySize,
                                                           enc_hash.get() + crypto::AES256_KeySize);
 
-  encrypted_data_map.reserve(copied);
+  protobuf::EncryptedDataMap protobuf_encrypted_data_map;
+  protobuf_encrypted_data_map.set_data_map_encryption_version(
+    static_cast<uint32_t>(kDataMapEncryptionVersion));
   CryptoPP::Gzip aes_filter(
       new CryptoPP::StreamTransformationFilter(
-          encryptor, new XORFilter(new CryptoPP::StringSink(encrypted_data_map), xor_hash.get(),
-                                   crypto::SHA512::DIGESTSIZE)),
+          encryptor,
+          new XORFilter(new CryptoPP::StringSink(*protobuf_encrypted_data_map.mutable_contents()),
+                        xor_hash.get(), crypto::SHA512::DIGESTSIZE)),
       6);
   aes_filter.Put2(array_data_map.get(), copied, -1, true);
 
-  assert(!encrypted_data_map.empty());
+  assert(!protobuf_encrypted_data_map.contents().empty());
 
-  return crypto::CipherText(encrypted_data_map);
+  return crypto::CipherText(protobuf_encrypted_data_map.SerializeAsString());
 }
 
 DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
@@ -163,30 +205,21 @@ DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
   assert(this_id.string().size() == static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   assert(!encrypted_data_map.empty());
 
-  std::string serialised_data_map;
-  size_t inputs_size(parent_id.string().size() + this_id.string().size());
-  ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
-      xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
-  CryptoPP::SHA512().CalculateDigest(
-      enc_hash.get(), reinterpret_cast<const byte*>((parent_id.string() + this_id.string()).data()),
-      inputs_size);
-  CryptoPP::SHA512().CalculateDigest(
-      xor_hash.get(), reinterpret_cast<const byte*>((this_id.string() + parent_id.string()).data()),
-      inputs_size);
+  protobuf::EncryptedDataMap protobuf_encrypted_data_map;
+  if (!protobuf_encrypted_data_map.ParseFromString(encrypted_data_map))
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
 
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(enc_hash.get(), crypto::AES256_KeySize,
-                                                          enc_hash.get() + crypto::AES256_KeySize);
+  // Don't switch here - just assume most current encryption version is being used and try
+  // progressively older versions until one works
+  // try {
+  //   return DecryptUsingVersion1(parent_id, this_id, protobuf_encrypted_data_map);
+  // }
+  // catch (const encrypt_error& error) {
+  //   if (error.code() != MakeError(EncryptErrors::invalid_encryption_version).code())
+  //     throw;
+  // }
 
-  CryptoPP::StringSource filter(
-      encrypted_data_map, true,
-      new XORFilter(
-          new CryptoPP::StreamTransformationFilter(
-              decryptor, new CryptoPP::Gunzip(new CryptoPP::StringSink(serialised_data_map))),
-          xor_hash.get(), crypto::SHA512::DIGESTSIZE));
-
-  DataMap data_map;
-  ParseDataMap(serialised_data_map, data_map);
-  return data_map;
+  return DecryptUsingVersion0(parent_id, this_id, protobuf_encrypted_data_map);
 }
 
 SelfEncryptor::SelfEncryptor(DataMap& data_map, data_store::DataBuffer<std::string>& buffer,
@@ -221,6 +254,8 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, data_store::DataBuffer<std::stri
       last_read_position_(0),
       kMaxBufferSize_(20 * kDefaultByteArraySize_),
       data_mutex_() {
+  if (data_map.self_encryption_version != EncryptionAlgorithm::kSelfEncryptionVersion0)
+    BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::invalid_encryption_version));
   if (!get_from_store) {
     LOG(kError) << "Need to have a non-null get_from_store functor.";
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));

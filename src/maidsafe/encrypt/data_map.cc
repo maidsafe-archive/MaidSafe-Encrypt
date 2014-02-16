@@ -23,13 +23,43 @@
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/data_map.pb.h"
+#include "maidsafe/encrypt/self_encryptor.h"
 
 namespace maidsafe {
 
 namespace encrypt {
 
+DataMap::DataMap() : self_encryption_version(kSelfEncryptionVersion), chunks(), content() {}
+
+uint64_t DataMap::size() const {
+  return chunks.empty() ? content.size() :
+      static_cast<uint64_t>(chunks[0].size) * (chunks.size() - 1) + chunks.rbegin()->size;
+}
+
+bool DataMap::empty() const { return chunks.empty() && content.empty(); }
+
+bool operator==(const DataMap& lhs, const DataMap& rhs) {
+  if (lhs.self_encryption_version != rhs.self_encryption_version || lhs.content != rhs.content ||
+      lhs.chunks.size() != rhs.chunks.size()) {
+    return false;
+  }
+
+  for (uint32_t i = 0; i < lhs.chunks.size(); ++i) {
+    if (lhs.chunks[i].hash != rhs.chunks[i].hash)
+      return false;
+  }
+
+  return true;
+}
+
+bool operator!=(const DataMap& lhs, const DataMap& rhs) {
+  return !(lhs == rhs);
+}
+
 void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map) {
   protobuf::DataMap proto_data_map;
+  proto_data_map.set_self_encryption_version(
+      static_cast<uint32_t>(data_map.self_encryption_version));
   if (!data_map.content.empty()) {
     proto_data_map.set_content(data_map.content);
   } else {
@@ -73,6 +103,8 @@ void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map) {
   if (!proto_data_map.ParseFromString(serialised_data_map))
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::parsing_error));
 
+  data_map.self_encryption_version =
+      static_cast<EncryptionAlgorithm>(proto_data_map.self_encryption_version());
   if (proto_data_map.has_content() && proto_data_map.chunk_details_size() != 0) {
     data_map.content = proto_data_map.content();
     ExtractChunkDetails(proto_data_map, data_map);

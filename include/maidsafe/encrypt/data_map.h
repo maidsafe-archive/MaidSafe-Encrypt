@@ -30,6 +30,8 @@ namespace maidsafe {
 
 namespace encrypt {
 
+enum class EncryptionAlgorithm : uint32_t;
+
 struct ChunkDetails {
   enum PreHashState {
     kEmpty,
@@ -62,31 +64,17 @@ struct ChunkDetails {
 };
 
 struct DataMap {
-  DataMap() : chunks(), content() {}
+  DataMap();
+  uint64_t size() const;
+  bool empty() const;
 
-  uint64_t size() const {
-    return chunks.empty() ? content.size() :
-        static_cast<uint64_t>(chunks[0].size) * (chunks.size() - 1) + chunks.rbegin()->size;
-  }
-
-  bool empty() const { return chunks.empty() && content.empty(); }
-
-  bool operator==(const DataMap& other) const {
-    if (content != other.content || chunks.size() != other.chunks.size())
-      return false;
-
-    for (uint32_t i = 0; i < chunks.size(); ++i)
-      if (chunks[i].hash != other.chunks[i].hash)
-        return false;
-
-    return true;
-  }
-
-  bool operator!=(const DataMap& other) const { return !(*this == other); }
-
+  EncryptionAlgorithm self_encryption_version;
   std::vector<ChunkDetails> chunks;
   std::string content;  // Whole data item, if small enough
 };
+
+bool operator==(const DataMap& lhs, const DataMap& rhs);
+bool operator!=(const DataMap& lhs, const DataMap& rhs);
 
 void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map);
 void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map);

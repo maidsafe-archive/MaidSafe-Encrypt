@@ -27,6 +27,12 @@ message ChunkDetails {
 }
 
 message DataMap {
-  repeated ChunkDetails chunk_details = 1;
-  optional bytes content = 2;
+  required uint32 self_encryption_version = 1;
+  repeated ChunkDetails chunk_details = 2;
+  optional bytes content = 3;
+}
+
+message EncryptedDataMap {
+  required uint32 data_map_encryption_version = 1;
+  required bytes contents = 2;
 }
