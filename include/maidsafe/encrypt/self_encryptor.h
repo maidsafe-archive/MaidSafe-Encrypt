@@ -28,8 +28,7 @@
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
-
-#include "maidsafe/data_store/data_buffer.h"
+#include "maidsafe/common/data_stores/data_buffer.h"
 
 #include "maidsafe/encrypt/data_map.h"
 

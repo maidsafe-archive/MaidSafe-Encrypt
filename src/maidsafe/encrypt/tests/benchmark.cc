@@ -22,7 +22,7 @@
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
-#include "maidsafe/data_store/local_store.h"
+#include "maidsafe/common/data_stores/local_store.h"
 
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
 
