@@ -56,7 +56,7 @@ class EncryptTestBase {
  protected:
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
-  data_store::DataBuffer<std::string> local_store_;
+  data_stores::DataBuffer<std::string> local_store_;
   DataMap data_map_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
   std::unique_ptr<SelfEncryptor> self_encryptor_;

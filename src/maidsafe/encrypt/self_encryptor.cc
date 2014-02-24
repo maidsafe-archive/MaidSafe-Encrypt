@@ -222,7 +222,7 @@ DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
   return DecryptUsingVersion0(parent_id, this_id, protobuf_encrypted_data_map);
 }
 
-SelfEncryptor::SelfEncryptor(DataMap& data_map, data_store::DataBuffer<std::string>& buffer,
+SelfEncryptor::SelfEncryptor(DataMap& data_map, data_stores::DataBuffer<std::string>& buffer,
                              std::function<NonEmptyString(const std::string&)> get_from_store,
                              int num_procs)
     : data_map_(data_map),

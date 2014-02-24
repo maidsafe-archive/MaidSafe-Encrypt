@@ -98,7 +98,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
   int kNumProcs(8);
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path store_path(*test_dir / "data_store");
-  data_store::DataBuffer<std::string> buffer(
+  data_stores::DataBuffer<std::string> buffer(
       MemoryUsage(4294967296U),
       DiskUsage(4294967296U),
       [](const std::string& name, const NonEmptyString&) {
