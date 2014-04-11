@@ -196,7 +196,7 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& thi
 
   assert(!protobuf_encrypted_data_map.contents().empty());
 
-  return crypto::CipherText(protobuf_encrypted_data_map.SerializeAsString());
+  return crypto::CipherText(NonEmptyString(protobuf_encrypted_data_map.SerializeAsString()));
 }
 
 DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
