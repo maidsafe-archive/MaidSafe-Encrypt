@@ -191,7 +191,7 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& thi
           encryptor,
           new XORFilter(new CryptoPP::StringSink(*protobuf_encrypted_data_map.mutable_contents()),
                         xor_hash.get(), crypto::SHA512::DIGESTSIZE)),
-      6);
+      1);
   aes_filter.Put2(array_data_map.get(), copied, -1, true);
 
   assert(!protobuf_encrypted_data_map.contents().empty());
@@ -785,7 +785,7 @@ int SelfEncryptor::EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length)
     CryptoPP::Gzip aes_filter(
         new CryptoPP::StreamTransformationFilter(
             encryptor, new XORFilter(new CryptoPP::StringSink(chunk_content), pad.get())),
-        6);
+        1);
     aes_filter.Put2(data, length, -1, true);
 
     ByteArray post_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));

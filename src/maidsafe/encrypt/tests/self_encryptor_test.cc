@@ -88,7 +88,7 @@ void GetEncryptionResult(boost::shared_array<byte>* result, boost::shared_array<
   std::copy(n2hash.get() + crypto::AES256_KeySize,
             n2hash.get() + crypto::AES256_KeySize + crypto::AES256_IVSize, iv.get());
 
-  CryptoPP::Gzip compress(new CryptoPP::MessageQueue(), 6);
+  CryptoPP::Gzip compress(new CryptoPP::MessageQueue(), 1);
   compress.Put2(chunk.get(), chunk_size, -1, true);
   uint32_t compressed_size = static_cast<uint32_t>(compress.MaxRetrievable());
   boost::shared_array<byte> comp_data(new byte[compressed_size]);
