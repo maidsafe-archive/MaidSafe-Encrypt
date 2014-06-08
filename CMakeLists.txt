@@ -93,7 +93,6 @@ endif()
 # Package                                                                                          #
 #==================================================================================================#
 set(EXPORT_NAME maidsafe_encrypt)
-install(TARGETS maidsafe_encrypt EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION bin/lib)
+install(TARGETS maidsafe_encrypt EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
 
 install(FILES ${EncryptApi} DESTINATION include/maidsafe/encrypt)
-install(FILES ${EncryptHeaders} DESTINATION src/maidsafe/encrypt)
