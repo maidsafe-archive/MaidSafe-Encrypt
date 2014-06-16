@@ -82,8 +82,19 @@ target_compile_definitions(benchmark_encrypt PRIVATE USE_GTEST)
 if(MaidsafeTesting)
   ms_add_style_test()
   ms_add_gtests(TESTencrypt)
-  set_property(TEST BasicTest.BEH_WriteLongAndShort65536SegmentsReadThenRewrite PROPERTY TIMEOUT 300)
-  set_property(TEST LargeFile/BasicOffsetTest.BEH_EncryptDecrypt/2 PROPERTY TIMEOUT 300)
+  set(Timeout 300)
+  ms_update_test_timeout(Timeout)
+  set_property(TEST BasicTest.BEH_WriteLongAndShort65536SegmentsReadThenRewrite PROPERTY TIMEOUT ${Timeout})
+  set_property(TEST LargeFile/BasicOffsetTest.BEH_EncryptDecrypt/2 PROPERTY TIMEOUT ${Timeout})
   ms_add_project_experimental()
   ms_test_summary_output()
 endif()
+
+
+#==================================================================================================#
+# Package                                                                                          #
+#==================================================================================================#
+set(EXPORT_NAME maidsafe_encrypt)
+install(TARGETS maidsafe_encrypt EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+
+install(FILES ${EncryptApi} DESTINATION include/maidsafe/encrypt)
