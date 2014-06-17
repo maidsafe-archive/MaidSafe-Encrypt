@@ -17,12 +17,11 @@
     use of the MaidSafe Software.                                                                 */
 
 #include <chrono>
-
+#include <memory>
 #include "boost/filesystem/operations.hpp"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
-#include "maidsafe/common/data_stores/local_store.h"
 
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
 
@@ -98,7 +97,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
   int kNumProcs(8);
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path store_path(*test_dir / "data_store");
-  data_stores::DataBuffer<std::string> buffer(
+  DataBuffer<std::string> buffer(
       MemoryUsage(4294967296U),
       DiskUsage(4294967296U),
       [](const std::string& name, const NonEmptyString&) {
@@ -112,7 +111,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
       [&buffer](const std::string& name) { return buffer.Get(name); }, kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
-  boost::scoped_array<char> original(new char[kDataSize]);
+  std::unique_ptr<char> original(new char[kDataSize]);
   std::string content(RandomString(kDataSize));
   std::copy(content.data(), content.data() + kDataSize, original.get());
 
