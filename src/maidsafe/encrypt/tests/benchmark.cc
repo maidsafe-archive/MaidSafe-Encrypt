@@ -56,9 +56,9 @@ class Benchmark : public EncryptTestBase, public testing::TestWithParam<uint32_t
     uint64_t rate((static_cast<uint64_t>(kTestDataSize_) * 1000000) / duration);
     std::string encrypted(encrypting ? "Self-encrypted " : "Self-decrypted ");
     std::string comp(compressible ? "compressible" : "incompressible");
-    std::cout << encrypted << BytesToBinarySiUnits(kTestDataSize_) << " of " << comp << " data in "
-              << BytesToBinarySiUnits(kPieceSize_) << " pieces in " << (duration / 1000)
-              << " milliseconds at a speed of " << BytesToBinarySiUnits(rate) << "/s\n";
+    std::cout << encrypted << BytesToDecimalSiUnits(kTestDataSize_) << " of " << comp << " data in "
+		      << BytesToDecimalSiUnits(kPieceSize_) << " pieces in " << (duration / 1000)
+		      << " milliseconds at a speed of " << BytesToDecimalSiUnits(rate) << "/s\n";
   }
   void WriteThenRead(bool compressible) {
     chrono_time_point start_time(std::chrono::high_resolution_clock::now());
