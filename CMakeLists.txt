@@ -55,12 +55,12 @@ ms_add_executable(benchmark_encrypt "Tests/Encrypt"
                  ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/benchmark.cc
                  ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_main.cc)
 target_include_directories(benchmark_encrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(benchmark_encrypt maidsafe_encrypt gmock gtest)
+target_link_libraries(benchmark_encrypt maidsafe_encrypt maidsafe_test)
 
 if(MaidsafeTesting)
   ms_add_executable(TESTencrypt "Tests/Encrypt"  ${EncryptTestsAllFiles})
   target_include_directories(TESTencrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client)
+  target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client maidsafe_test)
 endif()
 
 ms_rename_outdated_built_exes()
@@ -94,7 +94,12 @@ endif()
 #==================================================================================================#
 # Package                                                                                          #
 #==================================================================================================#
-set(EXPORT_NAME maidsafe_encrypt)
-install(TARGETS maidsafe_encrypt EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
+install(TARGETS maidsafe_encrypt COMPONENT Development CONFIGURATIONS Debug Release ARCHIVE DESTINATION lib)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ COMPONENT Development DESTINATION include)
 
-install(FILES ${EncryptApi} DESTINATION include/maidsafe/encrypt)
+install(TARGETS benchmark_encrypt COMPONENT Benchmarkss CONFIGURATIONS Release RUNTIME DESTINATION bin)
+
+if(MaidsafeTesting)
+  install(TARGETS TESTencrypt COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug)
+  install(TARGETS TESTencrypt COMPONENT Tests CONFIGURATIONS Release RUNTIME DESTINATION bin)
+endif()

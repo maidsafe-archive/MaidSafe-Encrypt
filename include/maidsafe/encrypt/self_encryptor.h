@@ -28,7 +28,7 @@
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
-#include "maidsafe/common/data_stores/data_buffer.h"
+#include "maidsafe/common/data_buffer.h"
 
 #include "maidsafe/encrypt/data_map.h"
 
@@ -54,7 +54,7 @@ DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
 
 class SelfEncryptor {
  public:
-  SelfEncryptor(DataMap& data_map, data_stores::DataBuffer<std::string>& buffer,
+  SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
                 std::function<NonEmptyString(const std::string&)> get_from_store,
                 int num_procs = 0);
   ~SelfEncryptor();
@@ -156,7 +156,7 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  data_stores::DataBuffer<std::string>& buffer_;
+  DataBuffer<std::string>& buffer_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
