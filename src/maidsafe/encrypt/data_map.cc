@@ -87,6 +87,7 @@ void ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_
         temp.pre_hash[ch] = pre_hash.at(ch);
     } else {
       data_map.chunks.clear();
+      LOG(kError) << "ExtractChunkDetails invalid_string_size";
       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_string_size));
     }
     temp.size = proto_data_map.chunk_details(n).size();
