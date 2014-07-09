@@ -1049,9 +1049,6 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   if (length == 0)
     return true;
 
-  if (ReadFromBuffer(data, length, position))
-    return true;
-
   PrepareToRead();
 
   if (length < kDefaultByteArraySize_) {
@@ -1066,6 +1063,8 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
     }
     memcpy(data, read_cache_.get() + static_cast<uint32_t>(position - cache_start_position_),
            length);
+  } else  if (ReadFromBuffer(data, length, position)) {
+    return true;
   } else {
     // length requested larger than cache size, just go ahead and read
     if (Transmogrify(data, length, position) != kSuccess) {
