@@ -46,6 +46,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/config.h"
+#include "maidsafe/encrypt/xor.h"
 #include "maidsafe/encrypt/data_map.pb.h"
 #include "maidsafe/encrypt/sequencer.h"
 
@@ -58,44 +59,6 @@ const EncryptionAlgorithm kDataMapEncryptionVersion =
     EncryptionAlgorithm::kDataMapEncryptionVersion0;
 
 namespace {
-
-const size_t kPadSize((3 * crypto::SHA512::DIGESTSIZE) - crypto::AES256_KeySize -
-                      crypto::AES256_IVSize);
-
-class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
- public:
-  XORFilter(CryptoPP::BufferedTransformation* attachment, byte* pad,
-            size_t pad_size = kPadSize)
-      : pad_(pad), count_(0), kPadSize_(pad_size) {
-    CryptoPP::Filter::Detach(attachment);
-  }
-  size_t Put2(const byte* in_string, size_t length, int message_end, bool blocking) override {
-    if (length == 0) {
-      return AttachedTransformation()->Put2(in_string, length, message_end, blocking);
-    }
-    std::unique_ptr<byte[]> buffer(new byte[length]);
-
-    size_t i(0);
-#ifdef MAIDSAFE_OMP_ENABLED
-// #  pragma omp parallel for shared(buffer, in_string) private(i)
-#endif
-    for (; i != length; ++i) {
-      buffer[i] = in_string[i] ^ pad_[count_ % kPadSize_];
-      ++count_;
-    }
-
-    return AttachedTransformation()->Put2(buffer.get(), length, message_end, blocking);
-  }
-  bool IsolatedFlush(bool, bool) override { return false; }
-
- private:
-  XORFilter& operator=(const XORFilter&);
-  XORFilter(const XORFilter&);
-
-  byte* pad_;
-  size_t count_;
-  const size_t kPadSize_;
-};
 
 /*
 void DebugPrint(bool encrypting,
