@@ -145,7 +145,7 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& thi
 
   protobuf::EncryptedDataMap protobuf_encrypted_data_map;
   protobuf_encrypted_data_map.set_data_map_encryption_version(
-    static_cast<uint32_t>(kDataMapEncryptionVersion));
+      static_cast<uint32_t>(kDataMapEncryptionVersion));
   CryptoPP::Gzip aes_filter(
       new CryptoPP::StreamTransformationFilter(
           encryptor,
@@ -208,9 +208,6 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
       read_cache_(),
       cache_start_position_(0),
       prepared_for_reading_(),
-      // read_buffer_(),
-      // buffer_activated_(false),
-      // buffer_length_(0),
       last_read_position_(0),
       kMaxBufferSize_(20 * kDefaultByteArraySize_),
       data_mutex_() {
@@ -251,7 +248,6 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
     return false;
   }
   PutToReadCache(data, length, position);
-  // PutToReadBuffer(data, length, position);
 
   uint32_t write_length(length);
   uint64_t write_position(position);
@@ -399,18 +395,6 @@ void SelfEncryptor::PutToReadCache(const char* data, uint32_t length, uint64_t p
     memcpy(read_cache_.get() + cache_offset, data + data_offset, copy_size);
   }
 }
-
-// void SelfEncryptor::PutToReadBuffer(const char* data, uint32_t length, uint64_t position) {
-//   SCOPED_PROFILE
-//   if (!buffer_activated_)
-//     return;
-//   if (position < buffer_length_) {
-//     uint64_t copy_size(buffer_length_ - position);
-//     if (copy_size > length)
-//       copy_size = length;
-//     memcpy(read_buffer_.get() + position, data, static_cast<uint32_t>(copy_size));
-//   }
-// }
 
 void SelfEncryptor::CalculateSizes(bool force) {
   SCOPED_PROFILE
@@ -562,7 +546,7 @@ void SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
   ByteArray iv(GetNewByteArray(crypto::AES256_IVSize));
   GetPadIvKey(chunk_num, key, iv, pad, false);
   NonEmptyString content;
-    content = buffer_.Get(data_map_.chunks[chunk_num].hash);
+  content = buffer_.Get(data_map_.chunks[chunk_num].hash);
 
   if (content.string().empty()) {
     LOG(kError) << "Could not find chunk number " << chunk_num << ", hash "
@@ -570,15 +554,14 @@ void SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
     BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::failed_to_decrypt));
   }
 
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), crypto::AES256_KeySize,
-                                                            iv.get());
-    CryptoPP::StringSource filter(
-        content.string(), true, new XORFilter(
-            new CryptoPP::StreamTransformationFilter(
-                decryptor,
-                new CryptoPP::Gunzip(new CryptoPP::MessageQueue)),
-            pad.get()));
-    filter.Get(data, length);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), crypto::AES256_KeySize,
+                                                          iv.get());
+  CryptoPP::StringSource filter(
+      content.string(), true,
+      new XORFilter(new CryptoPP::StreamTransformationFilter(
+                        decryptor, new CryptoPP::Gunzip(new CryptoPP::MessageQueue)),
+                    pad.get()));
+  filter.Get(data, length);
 }
 
 void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, ByteArray key, ByteArray iv, ByteArray pad,
@@ -640,25 +623,24 @@ int SelfEncryptor::ProcessMainQueue() {
 
   assert((last_chunk_position_ - queue_start_position_) % kMaxChunkSize == 0);
 
-  uint32_t first_queue_chunk_index =
-      static_cast<uint32_t>(queue_start_position_ / kMaxChunkSize);
+  uint32_t first_queue_chunk_index = static_cast<uint32_t>(queue_start_position_ / kMaxChunkSize);
   data_map_.chunks.resize(std::max(static_cast<uint32_t>(data_map_.chunks.size()),
-                                    first_queue_chunk_index + chunks_to_process));
+                                   first_queue_chunk_index + chunks_to_process));
   std::vector<std::future<void>> fut;
   for (int64_t i = 0; i < chunks_to_process; ++i) {
-    fut.emplace_back((std::async([=] () {
-    bool modified(false);
-    uint32_t chunk_index(first_queue_chunk_index + static_cast<uint32_t>(i));
-    data_map_.chunks[chunk_index].pre_hash_state = ChunkDetails::kOutdated;
-    CalculatePreHash(chunk_index,
-                     main_encrypt_queue_.get() + (static_cast<uint32_t>(i) * kMaxChunkSize),
-                     kMaxChunkSize, &modified);
-    if (modified) {
-      DeleteChunk(chunk_index);
+    fut.emplace_back((std::async([=]() {
+      bool modified(false);
+      uint32_t chunk_index(first_queue_chunk_index + static_cast<uint32_t>(i));
+      data_map_.chunks[chunk_index].pre_hash_state = ChunkDetails::kOutdated;
+      CalculatePreHash(chunk_index,
+                       main_encrypt_queue_.get() + (static_cast<uint32_t>(i) * kMaxChunkSize),
+                       kMaxChunkSize, &modified);
+      if (modified) {
+        DeleteChunk(chunk_index);
       }
-      })));
-        // thread barrier emulation
-    for(auto&res: fut)
+    })));
+    // thread barrier emulation
+    for (auto& res : fut)
       res.wait();
   }
 
@@ -675,12 +657,12 @@ int SelfEncryptor::ProcessMainQueue() {
   int result(kSuccess);
   std::vector<std::future<void>> fut2;
   for (int64_t i = first_chunk_index; i < chunks_to_process; ++i) {
-    fut2.emplace_back((std::async([=] () {
-    EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
-                         main_encrypt_queue_.get() + (i * kMaxChunkSize), kMaxChunkSize);
+    fut2.emplace_back((std::async([=]() {
+      EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
+                   main_encrypt_queue_.get() + (i * kMaxChunkSize), kMaxChunkSize);
     })));
     // thread barrier emulation
-    for(auto&res: fut2)
+    for (auto& res : fut2)
       res.wait();
   }
 
@@ -710,25 +692,25 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length
   ByteArray key(GetNewByteArray(crypto::AES256_KeySize));
   ByteArray iv(GetNewByteArray(crypto::AES256_IVSize));
   GetPadIvKey(chunk_num, key, iv, pad, true);
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(), crypto::AES256_KeySize,
-                                                            iv.get());
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(), crypto::AES256_KeySize,
+                                                          iv.get());
 
-    std::string chunk_content;
-    chunk_content.reserve(length);
-    CryptoPP::Gzip aes_filter(
-        new CryptoPP::StreamTransformationFilter(
-            encryptor, new XORFilter(new CryptoPP::StringSink(chunk_content), pad.get())),
-        1);
-    aes_filter.Put2(data, length, -1, true);
+  std::string chunk_content;
+  chunk_content.reserve(length);
+  CryptoPP::Gzip aes_filter(
+      new CryptoPP::StreamTransformationFilter(
+          encryptor, new XORFilter(new CryptoPP::StringSink(chunk_content), pad.get())),
+      1);
+  aes_filter.Put2(data, length, -1, true);
 
-    ByteArray post_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
-    CryptoPP::SHA512().CalculateDigest(
-        post_hash.get(), reinterpret_cast<const byte*>(chunk_content.data()), chunk_content.size());
-    data_map_.chunks[chunk_num]
-        .hash.assign(reinterpret_cast<char*>(post_hash.get()), crypto::SHA512::DIGESTSIZE);
+  ByteArray post_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
+  CryptoPP::SHA512().CalculateDigest(
+      post_hash.get(), reinterpret_cast<const byte*>(chunk_content.data()), chunk_content.size());
+  data_map_.chunks[chunk_num].hash.assign(reinterpret_cast<char*>(post_hash.get()),
+                                          crypto::SHA512::DIGESTSIZE);
 
-    data_map_.chunks[chunk_num].storage_state = ChunkDetails::kPending;
-      buffer_.Store(data_map_.chunks[chunk_num].hash, NonEmptyString(chunk_content));
+  data_map_.chunks[chunk_num].storage_state = ChunkDetails::kPending;
+  buffer_.Store(data_map_.chunks[chunk_num].hash, NonEmptyString(chunk_content));
 
   data_map_.chunks[chunk_num].size = length;  // keep pre-compressed length
 }
@@ -774,7 +756,7 @@ bool SelfEncryptor::Flush() {
 
   if (file_size_ < 3 * kMinChunkSize) {
     data_map_.content.assign(reinterpret_cast<char*>(chunk0_raw_.get()),
-                              static_cast<size_t>(file_size_));
+                             static_cast<size_t>(file_size_));
     data_map_.chunks.clear();
     flushed_ = true;
     return true;
@@ -991,7 +973,6 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
   if (length == 0)
     return true;
-
   PrepareToRead();
 
   if (length < kDefaultByteArraySize_) {
@@ -1006,8 +987,6 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
     }
     memcpy(data, read_cache_.get() + static_cast<uint32_t>(position - cache_start_position_),
            length);
-  // } else  if (ReadFromBuffer(data, length, position)) {
-  //   return true;
   } else {
     // length requested larger than cache size, just go ahead and read
     if (Transmogrify(data, length, position) != kSuccess) {
@@ -1017,44 +996,6 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   }
   return true;
 }
-
-// bool SelfEncryptor::ReadFromBuffer(char* data, uint32_t length, uint64_t position) {
-//   SCOPED_PROFILE
-//   if (!buffer_activated_) {
-//     uint64_t diff((position > last_read_position_) ? (position - last_read_position_)
-//                                                    : (last_read_position_ - position));
-//     last_read_position_ = position;
-//     if (diff > kDefaultByteArraySize_)
-//       ++buffer_length_;
-//     // trigger buffering once detected too many jumpping reading
-//     if (buffer_length_ > 5) {
-//       if (size() > kMaxBufferSize_)
-//         buffer_length_ = kMaxBufferSize_;
-//       else
-//         buffer_length_ = static_cast<uint32_t>(size());
-//       try {
-//         read_buffer_.reset(new char[buffer_length_]);
-//       }
-//       catch (const std::exception& e) {
-//         LOG(kError) << "Failed to read " << buffer_length_ << " bytes: " << e.what();
-//         read_buffer_.reset();
-//         return false;
-//       }
-//       // always buffering from 0
-//       if (Transmogrify(read_buffer_.get(), buffer_length_, 0) != kSuccess) {
-//         LOG(kError) << "Failed to read " << buffer_length_ << " bytes";
-//         return false;
-//       }
-//       buffer_activated_ = true;
-//     }
-//   } else {
-//     if ((position + length) < buffer_length_) {
-//       memcpy(data, read_buffer_.get() + position, length);
-//       return true;
-//     }
-//   }
-//   return false;
-// }
 
 void SelfEncryptor::PrepareToRead() {
   SCOPED_PROFILE
@@ -1108,15 +1049,15 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
     ByteArray temp(GetNewByteArray(static_cast<uint32_t>(file_size_)));
     std::vector<std::future<void>> fut;
     for (int64_t i = 0; i < num_chunks; ++i) {
-    fut.emplace_back(std::async([=] () {
-      uint32_t this_chunk_size(data_map_.chunks[static_cast<uint32_t>(i)].size);
-      if (this_chunk_size != 0) {
-        uint64_t offset = (static_cast<uint32_t>(i) * normal_chunk_size_);
-        DecryptChunk(static_cast<uint32_t>(i), temp.get() + offset);
-      }
+      fut.emplace_back(std::async([=]() {
+        uint32_t this_chunk_size(data_map_.chunks[static_cast<uint32_t>(i)].size);
+        if (this_chunk_size != 0) {
+          uint64_t offset = (static_cast<uint32_t>(i) * normal_chunk_size_);
+          DecryptChunk(static_cast<uint32_t>(i), temp.get() + offset);
+        }
       }));
-    for(auto&res: fut)
-      res.wait();
+      for (auto& res : fut)
+        res.wait();
     }
 
     memcpy(data, temp.get() + position,
@@ -1138,33 +1079,33 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
 
   std::vector<std::future<void>> fut2;
   for (int64_t i = first_chunk_index; i <= last_chunk_index; ++i) {
-    fut2.emplace_back(std::async([=] () {
-    uint32_t this_chunk_size(data_map_.chunks[static_cast<uint32_t>(i)].size);
-    if (this_chunk_size != 0) {
-      if (i == first_chunk_index) {
-        ByteArray temp(GetNewByteArray(this_chunk_size));
-        DecryptChunk(static_cast<uint32_t>(i), temp.get());
-        memcpy(data, temp.get() + first_chunk_offset, first_chunk_size);
-      } else if (i == last_chunk_index) {
-        ByteArray temp(GetNewByteArray(this_chunk_size));
-        DecryptChunk(static_cast<uint32_t>(i), temp.get());
-        uint32_t offset = kMaxChunkSize - first_chunk_offset +
-                          (last_chunk_index - first_chunk_index - 1) * kMaxChunkSize;
-        memcpy(data + offset, temp.get(), last_chunk_size);
-      } else {
-        uint32_t offset = kMaxChunkSize - first_chunk_offset +
-                          static_cast<uint32_t>(i - first_chunk_index - 1) * kMaxChunkSize;
-        DecryptChunk(static_cast<uint32_t>(i), reinterpret_cast<byte*>(&data[offset]));
+    fut2.emplace_back(std::async([=]() {
+      uint32_t this_chunk_size(data_map_.chunks[static_cast<uint32_t>(i)].size);
+      if (this_chunk_size != 0) {
+        if (i == first_chunk_index) {
+          ByteArray temp(GetNewByteArray(this_chunk_size));
+          DecryptChunk(static_cast<uint32_t>(i), temp.get());
+          memcpy(data, temp.get() + first_chunk_offset, first_chunk_size);
+        } else if (i == last_chunk_index) {
+          ByteArray temp(GetNewByteArray(this_chunk_size));
+          DecryptChunk(static_cast<uint32_t>(i), temp.get());
+          uint32_t offset = kMaxChunkSize - first_chunk_offset +
+                            (last_chunk_index - first_chunk_index - 1) * kMaxChunkSize;
+          memcpy(data + offset, temp.get(), last_chunk_size);
+        } else {
+          uint32_t offset = kMaxChunkSize - first_chunk_offset +
+                            static_cast<uint32_t>(i - first_chunk_index - 1) * kMaxChunkSize;
+          DecryptChunk(static_cast<uint32_t>(i), reinterpret_cast<byte*>(&data[offset]));
+        }
       }
-    }
     }));
     // thread barrier emulation
-    for(auto&res: fut2)
+    for (auto& res : fut2)
       res.wait();
   }
 }
 
-void SelfEncryptor::ReadInProcessData(char * data, uint32_t length, uint64_t position) {
+void SelfEncryptor::ReadInProcessData(char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
   uint32_t copy_size(0), bytes_read(0);
   uint64_t read_position(position);
@@ -1179,8 +1120,8 @@ void SelfEncryptor::ReadInProcessData(char * data, uint32_t length, uint64_t pos
   }
   // Get data from chunk 1 if required.
   if (read_position < 2 * kMaxChunkSize) {
-    copy_size = std::min(length - bytes_read,
-                         (2 * kMaxChunkSize) - static_cast<uint32_t>(read_position));
+    copy_size =
+        std::min(length - bytes_read, (2 * kMaxChunkSize) - static_cast<uint32_t>(read_position));
     memcpy(data + bytes_read, chunk1_raw_.get() + read_position - kMaxChunkSize, copy_size);
     bytes_read += copy_size;
     read_position += copy_size;

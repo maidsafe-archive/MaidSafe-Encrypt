@@ -94,8 +94,8 @@ class SelfEncryptor {
   // If data for writing overlaps or joins on to the end of main_encrypt_queue_,
   // this returns true and sets the offsets to the required start positions of
   // the data and the main_encrypt_queue_.
-  bool GetDataOffsetForEnqueuing(uint32_t length, uint64_t position,
-                                 uint32_t* data_offset, uint32_t* queue_offset);
+  bool GetDataOffsetForEnqueuing(uint32_t length, uint64_t position, uint32_t* data_offset,
+                                 uint32_t* queue_offset);
   // Copies data into main_encrypt_queue_.  Any elements of data that precede
   // the start of main_encrypt_queue_ are ignored.  If the main_encrypt_queue_
   // becomes full during the process, it is encrpyted and reset.  This repeats
@@ -126,8 +126,7 @@ class SelfEncryptor {
   // If the calculated pre-hash is different to any existing pre-hash,
   // modified is set to true.  In this case, chunks n+1 and n+2 have their
   // old_n1_pre_hash and old_n2_pre_hash fields completed if not already done.
-  void CalculatePreHash(uint32_t chunk_num, const byte* data, uint32_t length,
-                        bool* modified);
+  void CalculatePreHash(uint32_t chunk_num, const byte* data, uint32_t length, bool* modified);
   void CalculateSizes(bool force);
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();
@@ -163,9 +162,6 @@ class SelfEncryptor {
   std::unique_ptr<char[]> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;
-  // std::unique_ptr<char> read_buffer_;
-  // bool buffer_activated_;
-  // uint32_t buffer_length_;
   uint64_t last_read_position_;
   const uint32_t kMaxBufferSize_;
   mutable std::mutex data_mutex_;

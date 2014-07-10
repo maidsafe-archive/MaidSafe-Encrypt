@@ -181,75 +181,72 @@ TEST_P(BasicOffsetTest, BEH_EncryptDecrypt) {
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kOffset_ + kDataSize_, 0));
   for (uint32_t i = 0; i != kOffset_; ++i)
     ASSERT_EQ(0, decrypted_[i]) << "i == " << i;
-//  for (uint32_t i = 0; i != kDataSize_; ++i)
-//    ASSERT_EQ(original_[i], decrypted_[kOffset_ + i]) << "i == " << i;
+  //  for (uint32_t i = 0; i != kDataSize_; ++i)
+  //    ASSERT_EQ(original_[i], decrypted_[kOffset_ + i]) << "i == " << i;
 }
 
-INSTANTIATE_TEST_CASE_P(
-    FileSmallerThanMinFileSize, BasicOffsetTest,
-    testing::Values(std::make_pair(40, 0), std::make_pair(40, 50), std::make_pair(1024, 0),
-                    std::make_pair(3 * kMinChunkSize - 24, 23),
-                    std::make_pair(3 * kMinChunkSize - 1, 0)));
+INSTANTIATE_TEST_CASE_P(FileSmallerThanMinFileSize, BasicOffsetTest,
+                        testing::Values(std::make_pair(40, 0), std::make_pair(40, 50),
+                                        std::make_pair(1024, 0),
+                                        std::make_pair(3 * kMinChunkSize - 24, 23),
+                                        std::make_pair(3 * kMinChunkSize - 1, 0)));
 
-INSTANTIATE_TEST_CASE_P(
-    FileSmallerThanOneChunk, BasicOffsetTest,
-    testing::Values(std::make_pair(3 * kMinChunkSize, 0), std::make_pair(3 * kMinChunkSize - 1, 1),
-                    std::make_pair(3 * kMinChunkSize - 1, 1024),
-                    std::make_pair(kMaxChunkSize - 23, 22),
-                    std::make_pair(kMaxChunkSize - 1, 0)));
+INSTANTIATE_TEST_CASE_P(FileSmallerThanOneChunk, BasicOffsetTest,
+                        testing::Values(std::make_pair(3 * kMinChunkSize, 0),
+                                        std::make_pair(3 * kMinChunkSize - 1, 1),
+                                        std::make_pair(3 * kMinChunkSize - 1, 1024),
+                                        std::make_pair(kMaxChunkSize - 23, 22),
+                                        std::make_pair(kMaxChunkSize - 1, 0)));
 
 INSTANTIATE_TEST_CASE_P(
     FileSmallerThanThreeNormalChunks, BasicOffsetTest,
-    testing::Values(
-        std::make_pair(1, 2 * kMaxChunkSize - 1), std::make_pair(1, 2 * kMaxChunkSize),
-        std::make_pair(1, 3 * kMaxChunkSize - 2), std::make_pair(kMaxChunkSize, 0),
-        std::make_pair(kMaxChunkSize - 1, 1), std::make_pair(kMaxChunkSize - 1, 1024),
-        std::make_pair(kMaxChunkSize, kMaxChunkSize),
-        std::make_pair(kMaxChunkSize, kMaxChunkSize + 1),
-        std::make_pair(2 * kMaxChunkSize - 1, 0), std::make_pair(2 * kMaxChunkSize - 1, 1),
-        std::make_pair(2 * kMaxChunkSize, 0),
-        std::make_pair(2 * kMaxChunkSize - 1, kMaxChunkSize),
-        std::make_pair(3 * kMaxChunkSize - 23, 22),
-        std::make_pair(3 * kMaxChunkSize - 1, 0)));
+    testing::Values(std::make_pair(1, 2 * kMaxChunkSize - 1), std::make_pair(1, 2 * kMaxChunkSize),
+                    std::make_pair(1, 3 * kMaxChunkSize - 2), std::make_pair(kMaxChunkSize, 0),
+                    std::make_pair(kMaxChunkSize - 1, 1), std::make_pair(kMaxChunkSize - 1, 1024),
+                    std::make_pair(kMaxChunkSize, kMaxChunkSize),
+                    std::make_pair(kMaxChunkSize, kMaxChunkSize + 1),
+                    std::make_pair(2 * kMaxChunkSize - 1, 0),
+                    std::make_pair(2 * kMaxChunkSize - 1, 1), std::make_pair(2 * kMaxChunkSize, 0),
+                    std::make_pair(2 * kMaxChunkSize - 1, kMaxChunkSize),
+                    std::make_pair(3 * kMaxChunkSize - 23, 22),
+                    std::make_pair(3 * kMaxChunkSize - 1, 0)));
 
 INSTANTIATE_TEST_CASE_P(
     FileGreaterThanThreeNormalChunks,  // or equal to
     BasicOffsetTest,
-    testing::Values(
-        std::make_pair(1, 3 * kMaxChunkSize - 1), std::make_pair(1, 3 * kMaxChunkSize),
-        std::make_pair(1, 3 * kMaxChunkSize + 1),
-        std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + 1),
-        std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + 2),
-        std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + kMinChunkSize),
-        std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + kMinChunkSize + 1),
-        std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + kMinChunkSize + 2),
-        std::make_pair(kMaxChunkSize - 1, 3 * kMaxChunkSize),
-        std::make_pair(kMaxChunkSize - 1, 3 * kMaxChunkSize + 1),
-        std::make_pair(kMaxChunkSize - 1, 3 * kMaxChunkSize + 2),
-        std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize),
-        std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize + 1),
-        std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize + kMinChunkSize - 1),
-        std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize + kMinChunkSize),
-        std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize + kMinChunkSize + 1)));
+    testing::Values(std::make_pair(1, 3 * kMaxChunkSize - 1), std::make_pair(1, 3 * kMaxChunkSize),
+                    std::make_pair(1, 3 * kMaxChunkSize + 1),
+                    std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + 1),
+                    std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + 2),
+                    std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + kMinChunkSize),
+                    std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + kMinChunkSize + 1),
+                    std::make_pair(kMaxChunkSize - 1, 2 * kMaxChunkSize + kMinChunkSize + 2),
+                    std::make_pair(kMaxChunkSize - 1, 3 * kMaxChunkSize),
+                    std::make_pair(kMaxChunkSize - 1, 3 * kMaxChunkSize + 1),
+                    std::make_pair(kMaxChunkSize - 1, 3 * kMaxChunkSize + 2),
+                    std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize),
+                    std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize + 1),
+                    std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize + kMinChunkSize - 1),
+                    std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize + kMinChunkSize),
+                    std::make_pair(kMaxChunkSize, 2 * kMaxChunkSize + kMinChunkSize + 1)));
 
-INSTANTIATE_TEST_CASE_P(
-    FileGreaterThanTenNormalChunks,  // or equal to
-    BasicOffsetTest,
-    testing::Values(
-        std::make_pair(1, 10 * kMaxChunkSize - 1), std::make_pair(1, 10 * kMaxChunkSize),
-        std::make_pair(1, 10 * kMaxChunkSize + kMinChunkSize - 1),
-        std::make_pair(1, 10 * kMaxChunkSize + kMinChunkSize),
-        std::make_pair(1, 10 * kMaxChunkSize + kMinChunkSize + 1),
-        std::make_pair(10 * kMaxChunkSize - 1, 0),
-        std::make_pair(10 * kMaxChunkSize - 1, 1),
-        std::make_pair(10 * kMaxChunkSize - 1, 2), std::make_pair(10 * kMaxChunkSize, 0),
-        std::make_pair(10 * kMaxChunkSize, 1)));
+INSTANTIATE_TEST_CASE_P(FileGreaterThanTenNormalChunks,  // or equal to
+                        BasicOffsetTest,
+                        testing::Values(std::make_pair(1, 10 * kMaxChunkSize - 1),
+                                        std::make_pair(1, 10 * kMaxChunkSize),
+                                        std::make_pair(1, 10 * kMaxChunkSize + kMinChunkSize - 1),
+                                        std::make_pair(1, 10 * kMaxChunkSize + kMinChunkSize),
+                                        std::make_pair(1, 10 * kMaxChunkSize + kMinChunkSize + 1),
+                                        std::make_pair(10 * kMaxChunkSize - 1, 0),
+                                        std::make_pair(10 * kMaxChunkSize - 1, 1),
+                                        std::make_pair(10 * kMaxChunkSize - 1, 2),
+                                        std::make_pair(10 * kMaxChunkSize, 0),
+                                        std::make_pair(10 * kMaxChunkSize, 1)));
 
-INSTANTIATE_TEST_CASE_P(
-    LargeFile, BasicOffsetTest,
-    testing::Values(std::make_pair(1, 50 * kMaxChunkSize),
-                    std::make_pair(10 * kMaxChunkSize, 50 * kMaxChunkSize),
-                    std::make_pair(50 * kMaxChunkSize + kMinChunkSize, 1)));
+INSTANTIATE_TEST_CASE_P(LargeFile, BasicOffsetTest,
+                        testing::Values(std::make_pair(1, 50 * kMaxChunkSize),
+                                        std::make_pair(10 * kMaxChunkSize, 50 * kMaxChunkSize),
+                                        std::make_pair(50 * kMaxChunkSize + kMinChunkSize, 1)));
 
 class EncryptTest : public EncryptTestBase, public testing::TestWithParam<uint32_t> {
  public:
@@ -323,10 +320,10 @@ TEST_P(SingleBytesTest, BEH_WriteAlternatingBytes) {
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 }
 
-INSTANTIATE_TEST_CASE_P(
-    Writing, SingleBytesTest,
-    testing::Values(2, kMinChunkSize - 1, kMinChunkSize, kMinChunkSize + 1, 3 * kMinChunkSize - 1,
-                    3 * kMinChunkSize, 3 * kMinChunkSize + 1));
+INSTANTIATE_TEST_CASE_P(Writing, SingleBytesTest,
+                        testing::Values(2, kMinChunkSize - 1, kMinChunkSize, kMinChunkSize + 1,
+                                        3 * kMinChunkSize - 1, 3 * kMinChunkSize,
+                                        3 * kMinChunkSize + 1));
 
 class SmallSingleBytesTest : public EncryptTest {};
 
@@ -360,10 +357,10 @@ TEST_P(SmallSingleBytesTest, BEH_WriteRandomOrder) {
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 }
 
-INSTANTIATE_TEST_CASE_P(
-    Writing, SmallSingleBytesTest,
-    testing::Values(2, kMinChunkSize - 1, kMinChunkSize, kMinChunkSize + 1, 3 * kMinChunkSize - 1,
-                    3 * kMinChunkSize, 3 * kMinChunkSize + 1));
+INSTANTIATE_TEST_CASE_P(Writing, SmallSingleBytesTest,
+                        testing::Values(2, kMinChunkSize - 1, kMinChunkSize, kMinChunkSize + 1,
+                                        3 * kMinChunkSize - 1, 3 * kMinChunkSize,
+                                        3 * kMinChunkSize + 1));
 
 class InProcessTest : public EncryptTest {};
 
@@ -394,16 +391,16 @@ TEST_P(InProcessTest, BEH_ReadInOrder) {
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 }
 
-INSTANTIATE_TEST_CASE_P(
-    Reading, InProcessTest,
-    testing::Values(1, kMinChunkSize - 1, kMinChunkSize, kMinChunkSize + 1, 3 * kMinChunkSize - 1,
-                    3 * kMinChunkSize, 3 * kMinChunkSize + 1, kMaxChunkSize - 1,
-                    kMaxChunkSize, kMaxChunkSize + 1, 3 * kMaxChunkSize - 1,
-                    3 * kMaxChunkSize, 3 * kMaxChunkSize + 1,
-                    g_num_procs * 3 * kMaxChunkSize - 1, g_num_procs * 3 * kMaxChunkSize,
-                    g_num_procs * 3 * kMaxChunkSize + kMinChunkSize - 1,
-                    g_num_procs * 3 * kMaxChunkSize + kMinChunkSize,
-                    g_num_procs * 3 * kMaxChunkSize + kMinChunkSize + 1));
+INSTANTIATE_TEST_CASE_P(Reading, InProcessTest,
+                        testing::Values(1, kMinChunkSize - 1, kMinChunkSize, kMinChunkSize + 1,
+                                        3 * kMinChunkSize - 1, 3 * kMinChunkSize,
+                                        3 * kMinChunkSize + 1, kMaxChunkSize - 1, kMaxChunkSize,
+                                        kMaxChunkSize + 1, 3 * kMaxChunkSize - 1, 3 * kMaxChunkSize,
+                                        3 * kMaxChunkSize + 1, g_num_procs * 3 * kMaxChunkSize - 1,
+                                        g_num_procs * 3 * kMaxChunkSize,
+                                        g_num_procs * 3 * kMaxChunkSize + kMinChunkSize - 1,
+                                        g_num_procs * 3 * kMaxChunkSize + kMinChunkSize,
+                                        g_num_procs * 3 * kMaxChunkSize + kMinChunkSize + 1));
 
 class BasicTest : public EncryptTestBase, public testing::Test {
  public:
@@ -1022,9 +1019,10 @@ TEST_F(BasicTest, BEH_DeleteStoredChunkFromDisk) {
 
   {
     EXPECT_TRUE(self_encryptor_->Flush());
-    SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_, num_procs_);
-    EXPECT_FALSE(self_encryptor.Read(const_cast<char*>(recovered.data()),
-                                     static_cast<uint32_t>(recovered.size()), 0));
+    SelfEncryptor self_encryptor1(data_map_, local_store_, get_from_store_, num_procs_);
+    // we return data even if it is not there (zero's)
+    EXPECT_TRUE(self_encryptor1.Read(const_cast<char*>(recovered.data()),
+                                      static_cast<uint32_t>(recovered.size()), 0));
   }
 }
 
@@ -1238,8 +1236,8 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
   max_variation.push_back(1024);
   max_variation.push_back(3072);
   max_variation.push_back(chunk_size);
-  max_variation.push_back(3* chunk_size);
-  max_variation.push_back(6* chunk_size);
+  max_variation.push_back(3 * chunk_size);
+  max_variation.push_back(6 * chunk_size);
   num_of_tries.push_back(5);
   num_of_tries.push_back(20);
   num_of_tries.push_back(50);
