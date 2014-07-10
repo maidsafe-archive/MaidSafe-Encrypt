@@ -163,9 +163,9 @@ class SelfEncryptor {
   std::unique_ptr<char[]> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;
-  std::unique_ptr<char[]> read_buffer_;
-  bool buffer_activated_;
-  uint32_t buffer_length_;
+  // std::unique_ptr<char> read_buffer_;
+  // bool buffer_activated_;
+  // uint32_t buffer_length_;
   uint64_t last_read_position_;
   const uint32_t kMaxBufferSize_;
   mutable std::mutex data_mutex_;

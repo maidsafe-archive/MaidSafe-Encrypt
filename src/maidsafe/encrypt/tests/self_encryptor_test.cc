@@ -1021,6 +1021,7 @@ TEST_F(BasicTest, BEH_DeleteStoredChunkFromDisk) {
   local_store_.Delete(data_map_.chunks[0].hash);
 
   {
+    EXPECT_TRUE(self_encryptor_->Flush());
     SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_, num_procs_);
     EXPECT_FALSE(self_encryptor.Read(const_cast<char*>(recovered.data()),
                                      static_cast<uint32_t>(recovered.size()), 0));

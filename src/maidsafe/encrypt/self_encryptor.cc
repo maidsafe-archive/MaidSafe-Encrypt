@@ -208,9 +208,9 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
       read_cache_(),
       cache_start_position_(0),
       prepared_for_reading_(),
-      read_buffer_(),
-      buffer_activated_(false),
-      buffer_length_(0),
+      // read_buffer_(),
+      // buffer_activated_(false),
+      // buffer_length_(0),
       last_read_position_(0),
       kMaxBufferSize_(20 * kDefaultByteArraySize_),
       data_mutex_() {
@@ -251,7 +251,7 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
     return false;
   }
   PutToReadCache(data, length, position);
-  PutToReadBuffer(data, length, position);
+  // PutToReadBuffer(data, length, position);
 
   uint32_t write_length(length);
   uint64_t write_position(position);
@@ -400,17 +400,17 @@ void SelfEncryptor::PutToReadCache(const char* data, uint32_t length, uint64_t p
   }
 }
 
-void SelfEncryptor::PutToReadBuffer(const char* data, uint32_t length, uint64_t position) {
-  SCOPED_PROFILE
-  if (!buffer_activated_)
-    return;
-  if (position < buffer_length_) {
-    uint64_t copy_size(buffer_length_ - position);
-    if (copy_size > length)
-      copy_size = length;
-    memcpy(read_buffer_.get() + position, data, static_cast<uint32_t>(copy_size));
-  }
-}
+// void SelfEncryptor::PutToReadBuffer(const char* data, uint32_t length, uint64_t position) {
+//   SCOPED_PROFILE
+//   if (!buffer_activated_)
+//     return;
+//   if (position < buffer_length_) {
+//     uint64_t copy_size(buffer_length_ - position);
+//     if (copy_size > length)
+//       copy_size = length;
+//     memcpy(read_buffer_.get() + position, data, static_cast<uint32_t>(copy_size));
+//   }
+// }
 
 void SelfEncryptor::CalculateSizes(bool force) {
   SCOPED_PROFILE
@@ -1006,8 +1006,8 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
     }
     memcpy(data, read_cache_.get() + static_cast<uint32_t>(position - cache_start_position_),
            length);
-  } else  if (ReadFromBuffer(data, length, position)) {
-    return true;
+  // } else  if (ReadFromBuffer(data, length, position)) {
+  //   return true;
   } else {
     // length requested larger than cache size, just go ahead and read
     if (Transmogrify(data, length, position) != kSuccess) {
@@ -1018,43 +1018,43 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   return true;
 }
 
-bool SelfEncryptor::ReadFromBuffer(char* data, uint32_t length, uint64_t position) {
-  SCOPED_PROFILE
-  if (!buffer_activated_) {
-    uint64_t diff((position > last_read_position_) ? (position - last_read_position_)
-                                                   : (last_read_position_ - position));
-    last_read_position_ = position;
-    if (diff > kDefaultByteArraySize_)
-      ++buffer_length_;
-    // trigger buffering once detected too many jumpping reading
-    if (buffer_length_ > 5) {
-      if (size() > kMaxBufferSize_)
-        buffer_length_ = kMaxBufferSize_;
-      else
-        buffer_length_ = static_cast<uint32_t>(size());
-      try {
-        read_buffer_.reset(new char[buffer_length_]);
-      }
-      catch (const std::exception& e) {
-        LOG(kError) << "Failed to read " << buffer_length_ << " bytes: " << e.what();
-        read_buffer_.reset();
-        return false;
-      }
-      // always buffering from 0
-      if (Transmogrify(read_buffer_.get(), buffer_length_, 0) != kSuccess) {
-        LOG(kError) << "Failed to read " << buffer_length_ << " bytes";
-        return false;
-      }
-      buffer_activated_ = true;
-    }
-  } else {
-    if ((position + length) < buffer_length_) {
-      memcpy(data, read_buffer_.get() + position, length);
-      return true;
-    }
-  }
-  return false;
-}
+// bool SelfEncryptor::ReadFromBuffer(char* data, uint32_t length, uint64_t position) {
+//   SCOPED_PROFILE
+//   if (!buffer_activated_) {
+//     uint64_t diff((position > last_read_position_) ? (position - last_read_position_)
+//                                                    : (last_read_position_ - position));
+//     last_read_position_ = position;
+//     if (diff > kDefaultByteArraySize_)
+//       ++buffer_length_;
+//     // trigger buffering once detected too many jumpping reading
+//     if (buffer_length_ > 5) {
+//       if (size() > kMaxBufferSize_)
+//         buffer_length_ = kMaxBufferSize_;
+//       else
+//         buffer_length_ = static_cast<uint32_t>(size());
+//       try {
+//         read_buffer_.reset(new char[buffer_length_]);
+//       }
+//       catch (const std::exception& e) {
+//         LOG(kError) << "Failed to read " << buffer_length_ << " bytes: " << e.what();
+//         read_buffer_.reset();
+//         return false;
+//       }
+//       // always buffering from 0
+//       if (Transmogrify(read_buffer_.get(), buffer_length_, 0) != kSuccess) {
+//         LOG(kError) << "Failed to read " << buffer_length_ << " bytes";
+//         return false;
+//       }
+//       buffer_activated_ = true;
+//     }
+//   } else {
+//     if ((position + length) < buffer_length_) {
+//       memcpy(data, read_buffer_.get() + position, length);
+//       return true;
+//     }
+//   }
+//   return false;
+// }
 
 void SelfEncryptor::PrepareToRead() {
   SCOPED_PROFILE
