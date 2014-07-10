@@ -18,10 +18,6 @@
 
 #include "maidsafe/encrypt/self_encryptor.h"
 
-#ifdef MAIDSAFE_OMP_ENABLED
-#include <omp.h>
-#endif
-
 #include <algorithm>
 #include <limits>
 #include <set>
@@ -350,11 +346,7 @@ int SelfEncryptor::PrepareToWrite(uint32_t length, uint64_t position) {
     uint64_t pos(0);
     uint32_t copied_to_queue(0);
     for (uint32_t i(0); i != chunks_to_decrypt; ++i) {
-      int result(DecryptChunk(i, temp.get()));
-      if (result != kSuccess) {
-        LOG(kError) << "Failed to prepare for writing.";
-        return result;
-      }
+      DecryptChunk(i, temp.get());
       uint32_t len(data_map_.chunks[i].size);
       uint32_t written = PutToInitialChunks(reinterpret_cast<char*>(temp.get()), &len, &pos);
       consumed_whole_chunk = (len == 0);
@@ -556,14 +548,13 @@ void SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
   SCOPED_PROFILE
   if (data_map_.chunks.size() <= chunk_num) {
     LOG(kWarning) << "Can't decrypt chunk " << chunk_num << " of " << data_map_.chunks.size();
-    return kInvalidChunkIndex;
-    BOOST_THROW_EXCEPTION(MakeError(encrypt_error::failed_to_decrypt));
+    BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::failed_to_decrypt));
   }
 
   uint32_t length = data_map_.chunks[chunk_num].size;
   if (length == 0) {  // Chunk hasn't been encrypted yet
     memset(data, 0, normal_chunk_size_);
-    return kSuccess;
+    return;
   }
 
   ByteArray pad(GetNewByteArray(kPadSize));
@@ -576,7 +567,7 @@ void SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
   if (content.string().empty()) {
     LOG(kError) << "Could not find chunk number " << chunk_num << ", hash "
                 << Base64Substr(data_map_.chunks[chunk_num].hash);
-    return kMissingChunk;
+    BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::failed_to_decrypt));
   }
 
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), crypto::AES256_KeySize,
@@ -688,7 +679,7 @@ int SelfEncryptor::ProcessMainQueue() {
     EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
                          main_encrypt_queue_.get() + (i * kMaxChunkSize), kMaxChunkSize);
     })));
-        // thread barrier emulation
+    // thread barrier emulation
     for(auto&res: fut2)
       res.wait();
   }
@@ -1056,8 +1047,7 @@ bool SelfEncryptor::ReadFromBuffer(char* data, uint32_t length, uint64_t positio
       }
       buffer_activated_ = true;
     }
-  }
-  if (buffer_activated_) {
+  } else {
     if ((position + length) < buffer_length_) {
       memcpy(data, read_buffer_.get() + position, length);
       return true;
@@ -1100,12 +1090,7 @@ int SelfEncryptor::Transmogrify(char* data, uint32_t length, uint64_t position) 
     return kSuccess;
   }
 
-  int result(ReadDataMapChunks(data, length, position));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to read DM chunks during transmogrification of " << length
-                << " bytes at position " << position;
-    return result;
-  }
+  ReadDataMapChunks(data, length, position);
 
   if (!prepared_for_writing_)
     return kSuccess;
@@ -1117,7 +1102,7 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
   SCOPED_PROFILE
   if (data_map_.chunks.empty() || position >= file_size_)
     return;
-
+  uint32_t num_chunks = static_cast<uint32_t>(data_map_.chunks.size());
   if (normal_chunk_size_ != kMaxChunkSize) {
     assert(file_size_ < 3 * kMaxChunkSize + kMinChunkSize - 1);
     ByteArray temp(GetNewByteArray(static_cast<uint32_t>(file_size_)));
@@ -1151,46 +1136,32 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
       std::min(static_cast<uint32_t>(position + length - (last_chunk_index * kMaxChunkSize)),
                data_map_.chunks[last_chunk_index].size));
 
-#ifdef MAIDSAFE_OMP_ENABLED
-#pragma omp parallel for
-#endif
-#ifdef __GNUC__
-  for (uint32_t i = first_chunk_index; i <= last_chunk_index; ++i) {
-#else
+  std::vector<std::future<void>> fut2;
   for (int64_t i = first_chunk_index; i <= last_chunk_index; ++i) {
-#endif
+    fut2.emplace_back(std::async([=] () {
     uint32_t this_chunk_size(data_map_.chunks[static_cast<uint32_t>(i)].size);
     if (this_chunk_size != 0) {
       if (i == first_chunk_index) {
         ByteArray temp(GetNewByteArray(this_chunk_size));
-        int res = DecryptChunk(static_cast<uint32_t>(i), temp.get());
-        if (res != kSuccess) {
-          LOG(kError) << "Failed to decrypt chunk " << i;
-          result = res;
-        }
+        DecryptChunk(static_cast<uint32_t>(i), temp.get());
         memcpy(data, temp.get() + first_chunk_offset, first_chunk_size);
       } else if (i == last_chunk_index) {
         ByteArray temp(GetNewByteArray(this_chunk_size));
-        int res = DecryptChunk(static_cast<uint32_t>(i), temp.get());
-        if (res != kSuccess) {
-          LOG(kError) << "Failed to decrypt chunk " << i;
-          result = res;
-        }
+        DecryptChunk(static_cast<uint32_t>(i), temp.get());
         uint32_t offset = kMaxChunkSize - first_chunk_offset +
                           (last_chunk_index - first_chunk_index - 1) * kMaxChunkSize;
         memcpy(data + offset, temp.get(), last_chunk_size);
       } else {
         uint32_t offset = kMaxChunkSize - first_chunk_offset +
                           static_cast<uint32_t>(i - first_chunk_index - 1) * kMaxChunkSize;
-        int res = DecryptChunk(static_cast<uint32_t>(i), reinterpret_cast<byte*>(&data[offset]));
-        if (res != kSuccess) {
-          LOG(kError) << "Failed to decrypt chunk " << i;
-          result = res;
-        }
+        DecryptChunk(static_cast<uint32_t>(i), reinterpret_cast<byte*>(&data[offset]));
       }
     }
+    }));
+    // thread barrier emulation
+    for(auto&res: fut2)
+      res.wait();
   }
-  return result;
 }
 
 void SelfEncryptor::ReadInProcessData(char * data, uint32_t length, uint64_t position) {
@@ -1346,16 +1317,7 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
   if (data_map_.chunks[chunk_num].hash.empty())
     return;
 
-  /*if (chunk_num < original_data_map_->chunks.size() &&
-      data_map_.chunks[chunk_num].hash == original_data_map_->chunks[chunk_num].hash) {
-    return;
-  }*/
-
-  try {
-    buffer_.Delete(data_map_.chunks[chunk_num].hash);
-  }
-  catch (...) {
-  }
+  buffer_.Delete(data_map_.chunks[chunk_num].hash);
 }
 
 }  // namespace encrypt
