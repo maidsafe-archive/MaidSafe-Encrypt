@@ -1086,12 +1086,12 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
   // Prehash checks
   for (uint32_t i = 0; i != num_chunks - 1; ++i) {
     for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
-      ASSERT_EQ(prehash[j], self_encryptor_->data_map().chunks[i].pre_hash[j])
+      EXPECT_EQ(prehash[j], self_encryptor_->data_map().chunks[i].pre_hash[j])
           << "failed at chunk " << i << " pre hash " << j;
     }
   }
   for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
-    ASSERT_EQ(prehash_final[j], self_encryptor_->data_map().chunks[num_chunks - 1].pre_hash[j])
+    EXPECT_EQ(prehash_final[j], self_encryptor_->data_map().chunks[num_chunks - 1].pre_hash[j])
         << "failed at final chunk pre hash " << j;
   }
 

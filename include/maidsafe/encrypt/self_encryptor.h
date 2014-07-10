@@ -112,7 +112,7 @@ class SelfEncryptor {
   // copied.
   bool GetLengthForSequencer(uint64_t position, uint32_t* length);
   // Retrieves the encrypted chunk from chunk_store_ and decrypts it to "data".
-  int DecryptChunk(uint32_t chunk_num, byte* data);
+  void DecryptChunk(uint32_t chunk_num, byte* data);
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
   // encryption pad.  If writing, and chunk has old_n1_pre_hash and
   // old_n2_pre_hash fields set, they are reset to NULL.
@@ -122,7 +122,7 @@ class SelfEncryptor {
   // the front of the queue.
   int ProcessMainQueue();
   // Encrypts the chunk and stores in chunk_store_
-  int EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length);
+  void EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length);
   // If the calculated pre-hash is different to any existing pre-hash,
   // modified is set to true.  In this case, chunks n+1 and n+2 have their
   // old_n1_pre_hash and old_n2_pre_hash fields completed if not already done.
@@ -137,7 +137,7 @@ class SelfEncryptor {
   bool ReadFromBuffer(char* data, uint32_t length, uint64_t position);
   // Handles reading from populated data_map_ and all the various write buffers.
   int Transmogrify(char* data, uint32_t length, uint64_t position);
-  int ReadDataMapChunks(char* data, uint32_t length, uint64_t position);
+  void ReadDataMapChunks(char* data, uint32_t length, uint64_t position);
   void ReadInProcessData(char* data, uint32_t length, uint64_t position);
   bool TruncateUp(uint64_t position);
   bool AppendNulls(uint64_t position);
