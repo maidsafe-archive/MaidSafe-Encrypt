@@ -1241,7 +1241,7 @@ int SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posit
         int res = DecryptChunk(static_cast<uint32_t>(i), reinterpret_cast<byte*>(&data[offset]));
         if (res != kSuccess) {
           LOG(kError) << "Failed to decrypt chunk " << i;
-          return res;
+          result = res;
         }
       }
     }
