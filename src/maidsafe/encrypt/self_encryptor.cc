@@ -1240,9 +1240,8 @@ int SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posit
                           static_cast<uint32_t>(i - first_chunk_index - 1) * kMaxChunkSize;
         int res = DecryptChunk(static_cast<uint32_t>(i), reinterpret_cast<byte*>(&data[offset]));
         if (res != kSuccess) {
-          std::lock_guard<std::mutex> guard(data_mutex_);
           LOG(kError) << "Failed to decrypt chunk " << i;
-          result = res;
+          return res;
         }
       }
     }
