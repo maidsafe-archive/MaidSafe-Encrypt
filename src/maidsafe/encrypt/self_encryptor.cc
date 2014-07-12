@@ -1252,9 +1252,9 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
   if (data_map_.chunks[chunk_num].hash.empty())
     return;
 
-  try{
-  buffer_.Delete(data_map_.chunks[chunk_num].hash);
-  } catch(std::exception &e) {
+  try {
+    buffer_.Delete(data_map_.chunks[chunk_num].hash);
+  } catch (std::exception& e) {
     LOG(kWarning) << e.what();
   }
 }
