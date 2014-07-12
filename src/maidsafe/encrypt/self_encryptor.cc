@@ -546,8 +546,12 @@ void SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
   ByteArray iv(GetNewByteArray(crypto::AES256_IVSize));
   GetPadIvKey(chunk_num, key, iv, pad, false);
   NonEmptyString content;
+  try {
   content = buffer_.Get(data_map_.chunks[chunk_num].hash);
-
+  } catch(std::exception &e) {
+    LOG(kInfo) << boost::current_exception_diagnostic_information(true);
+    BOOST_THROW_EXCEPTION(e);
+  }
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), crypto::AES256_KeySize,
                                                           iv.get());
   CryptoPP::StringSource filter(
@@ -704,7 +708,13 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length
                                           crypto::SHA512::DIGESTSIZE);
 
   data_map_.chunks[chunk_num].storage_state = ChunkDetails::kPending;
-  buffer_.Store(data_map_.chunks[chunk_num].hash, NonEmptyString(chunk_content));
+  try {
+    buffer_.Store(data_map_.chunks[chunk_num].hash, NonEmptyString(chunk_content));
+  } catch (std::exception& e) {
+    LOG(kError) << e.what() << "Could not store " << Base64Substr(data_map_.chunks[chunk_num].hash);
+    LOG(kInfo) << boost::current_exception_diagnostic_information(true);
+    data_map_.chunks[chunk_num].storage_state = ChunkDetails::kUnstored;
+  }
 
   data_map_.chunks[chunk_num].size = length;  // keep pre-compressed length
 }
@@ -1255,7 +1265,8 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
   try {
     buffer_.Delete(data_map_.chunks[chunk_num].hash);
   } catch (std::exception& e) {
-    LOG(kWarning) << e.what();
+    LOG(kInfo) << boost::current_exception_diagnostic_information(true);
+    BOOST_THROW_EXCEPTION(e);
   }
 }
 
