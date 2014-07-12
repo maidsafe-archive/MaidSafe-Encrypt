@@ -142,8 +142,6 @@ class BasicOffsetTest : public EncryptTestBase, public testing::TestWithParam<Si
     memset(decrypted_.get(), 1, kDataSize_);
   }
 
-  void TearDown() override {}
-
   const uint32_t kDataSize_, kOffset_;
   TestFileSize test_file_size_;
 };
@@ -590,7 +588,7 @@ TEST_F(BasicTest, FUNC_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
   EXPECT_EQ(total_size, self_encryptor_->size());
 
   // Read back and check post processing.
-  self_encryptor_->Flush();
+  // self_encryptor_->Flush();
   EXPECT_EQ(total_size, self_encryptor_->size());
   memset(decrypted_.get(), 1, total_size);
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), total_size, 0));

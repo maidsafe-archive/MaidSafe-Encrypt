@@ -31,6 +31,7 @@
 #include "maidsafe/common/data_buffer.h"
 
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/byte_array.h"
 
 namespace maidsafe {
 
@@ -94,8 +95,8 @@ class SelfEncryptor {
   // If data for writing overlaps or joins on to the end of main_encrypt_queue_,
   // this returns true and sets the offsets to the required start positions of
   // the data and the main_encrypt_queue_.
-  bool GetDataOffsetForEnqueuing(uint32_t length, uint64_t position, uint32_t* data_offset,
-                                 uint32_t* queue_offset);
+  bool GetDataOffsetForEnqueuing(uint32_t length, uint64_t position,
+                                 uint32_t* data_offset, uint32_t* queue_offset);
   // Copies data into main_encrypt_queue_.  Any elements of data that precede
   // the start of main_encrypt_queue_ are ignored.  If the main_encrypt_queue_
   // becomes full during the process, it is encrpyted and reset.  This repeats
@@ -116,8 +117,8 @@ class SelfEncryptor {
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
   // encryption pad.  If writing, and chunk has old_n1_pre_hash and
   // old_n2_pre_hash fields set, they are reset to NULL.
-  void GetPadIvKey(uint32_t this_chunk_num, std::shared_ptr<byte> key, std::shared_ptr<byte> iv,
-                   std::shared_ptr<byte> pad, bool writing);
+  void GetPadIvKey(uint32_t this_chunk_num, ByteArray key, ByteArray iv, ByteArray pad,
+                   bool writing);
   // Encrypts all but the last chunk in the queue, then moves the last chunk to
   // the front of the queue.
   int ProcessMainQueue();
@@ -126,7 +127,8 @@ class SelfEncryptor {
   // If the calculated pre-hash is different to any existing pre-hash,
   // modified is set to true.  In this case, chunks n+1 and n+2 have their
   // old_n1_pre_hash and old_n2_pre_hash fields completed if not already done.
-  void CalculatePreHash(uint32_t chunk_num, const byte* data, uint32_t length, bool* modified);
+  void CalculatePreHash(uint32_t chunk_num, const byte* data, uint32_t length,
+                        bool* modified);
   void CalculateSizes(bool force);
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();

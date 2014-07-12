@@ -548,12 +548,6 @@ void SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
   NonEmptyString content;
   content = buffer_.Get(data_map_.chunks[chunk_num].hash);
 
-  if (content.string().empty()) {
-    LOG(kError) << "Could not find chunk number " << chunk_num << ", hash "
-                << Base64Substr(data_map_.chunks[chunk_num].hash);
-    BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::failed_to_decrypt));
-  }
-
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), crypto::AES256_KeySize,
                                                           iv.get());
   CryptoPP::StringSource filter(
@@ -1258,7 +1252,11 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
   if (data_map_.chunks[chunk_num].hash.empty())
     return;
 
+  try{
   buffer_.Delete(data_map_.chunks[chunk_num].hash);
+  } catch(std::exception &e) {
+    LOG(kWarning) << e.what();
+  }
 }
 
 }  // namespace encrypt

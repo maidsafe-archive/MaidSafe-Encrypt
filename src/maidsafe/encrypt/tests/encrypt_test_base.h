@@ -51,7 +51,7 @@ class EncryptTestBase {
         original_(),
         decrypted_() {}
 
-  virtual ~EncryptTestBase() {}
+  virtual ~EncryptTestBase() = default;
 
  protected:
   maidsafe::test::TestPath test_dir_;
