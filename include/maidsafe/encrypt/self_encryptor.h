@@ -31,7 +31,6 @@
 #include "maidsafe/common/data_buffer.h"
 
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/byte_array.h"
 
 namespace maidsafe {
 
@@ -117,8 +116,8 @@ class SelfEncryptor {
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
   // encryption pad.  If writing, and chunk has old_n1_pre_hash and
   // old_n2_pre_hash fields set, they are reset to NULL.
-  void GetPadIvKey(uint32_t this_chunk_num, ByteArray key, ByteArray iv, ByteArray pad,
-                   bool writing);
+  void GetPadIvKey(uint32_t this_chunk_num, std::shared_ptr<byte> key, std::shared_ptr<byte> iv,
+                   std::shared_ptr<byte> pad, bool writing);
   // Encrypts all but the last chunk in the queue, then moves the last chunk to
   // the front of the queue.
   int ProcessMainQueue();
