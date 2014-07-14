@@ -58,6 +58,10 @@ class SelfEncryptor {
                 std::function<NonEmptyString(const std::string&)> get_from_store,
                 int num_procs = 0);
   ~SelfEncryptor();
+  SelfEncryptor(const SelfEncryptor&) = delete;
+  SelfEncryptor(SelfEncryptor&&) = delete;
+  SelfEncryptor& operator=(SelfEncryptor) = delete;
+
   bool Write(const char* data, uint32_t length, uint64_t position);
   bool Read(char* data, uint32_t length, uint64_t position);
   // Can truncate up or down
@@ -72,10 +76,6 @@ class SelfEncryptor {
   const DataMap& original_data_map() const { return kOriginalDataMap_; }
 
  private:
-  SelfEncryptor(const SelfEncryptor&);
-  SelfEncryptor(SelfEncryptor&&);
-  SelfEncryptor& operator=(SelfEncryptor);
-
   // If prepared_for_writing_ is not already true, this either reads the first 2
   // chunks into their appropriate buffers or reads the content field of
   // data_map_ into chunk0_raw_.  This guarantees that if data_map_ had
@@ -103,8 +103,8 @@ class SelfEncryptor {
   // chunk 0 or 1, it is copied to those buffer(s) instead.  In this case, these
   // chunk buffers are treated as part of the main_encrypt_queue_ as far as
   // updating position pointers is concerned.
-  int PutToEncryptQueue(const char* data, uint32_t length, uint32_t data_offset,
-                        uint32_t queue_offset);
+  void PutToEncryptQueue(const char* data, uint32_t length, uint32_t data_offset,
+                         uint32_t queue_offset);
   // Any data for writing beyond chunks 0 and 1 and which precedes
   // main_encrypt_queue_, is added to the sequencer.  So is any data which
   // follows but doesn't adjoin main_encrypt_queue_.  For such a case, this
@@ -120,7 +120,7 @@ class SelfEncryptor {
                    std::shared_ptr<byte> pad, bool writing);
   // Encrypts all but the last chunk in the queue, then moves the last chunk to
   // the front of the queue.
-  int ProcessMainQueue();
+  void ProcessMainQueue();
   // Encrypts the chunk and stores in chunk_store_
   void EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length);
   // If the calculated pre-hash is different to any existing pre-hash,

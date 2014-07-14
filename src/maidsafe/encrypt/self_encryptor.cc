@@ -271,10 +271,7 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
     CalculatePreHash(1, chunk1_raw_.get(), normal_chunk_size_, &modified);
     if (modified)
       data_map_.chunks[1].size = 0;
-    if (PutToEncryptQueue(data + written, write_length, data_offset, queue_offset) != kSuccess) {
-      LOG(kError) << "Failed to write " << length << " bytes at position " << position;
-      return false;
-    }
+    PutToEncryptQueue(data + written, write_length, data_offset, queue_offset);
   } else if (GetLengthForSequencer(write_position, &write_length)) {
     if (sequencer_->Add(data + written, write_length, write_position) != kSuccess) {
       LOG(kError) << "Failed to write " << length << " bytes at position " << position;
@@ -293,11 +290,8 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
     if (extra_offset < Size(extra)) {
       uint32_t queue_offset(static_cast<uint32_t>(
           std::max(current_position_, next_seq_block.first) - queue_start_position_));
-      if (kSuccess != PutToEncryptQueue(reinterpret_cast<char*>(extra.get()), Size(extra),
-                                        extra_offset, queue_offset)) {
-        LOG(kError) << "Failed to write " << length << " bytes at position " << position;
-        return false;
-      }
+      PutToEncryptQueue(reinterpret_cast<char*>(extra.get()), Size(extra), extra_offset,
+                        queue_offset);
     }
     next_seq_block = sequencer_->PeekBeyond(current_position_);
   }
@@ -487,8 +481,8 @@ bool SelfEncryptor::GetDataOffsetForEnqueuing(uint32_t length, uint64_t position
   return false;
 }
 
-int SelfEncryptor::PutToEncryptQueue(const char* data, uint32_t length, uint32_t data_offset,
-                                     uint32_t queue_offset) {
+void SelfEncryptor::PutToEncryptQueue(const char* data, uint32_t length, uint32_t data_offset,
+                                      uint32_t queue_offset) {
   SCOPED_PROFILE
   length -= data_offset;
   uint32_t copy_length = std::min(length, kQueueCapacity_ - queue_offset);
@@ -499,9 +493,7 @@ int SelfEncryptor::PutToEncryptQueue(const char* data, uint32_t length, uint32_t
     current_position_ = std::max(queue_start_position_ + copied + queue_offset, current_position_);
     retrievable_from_queue_ = static_cast<uint32_t>(current_position_ - queue_start_position_);
     if (retrievable_from_queue_ == kQueueCapacity_) {
-      int result(ProcessMainQueue());
-      if (result != kSuccess)
-        return result;
+      ProcessMainQueue();
       queue_offset = retrievable_from_queue_;
     } else {
       queue_offset += copy_length;
@@ -510,7 +502,6 @@ int SelfEncryptor::PutToEncryptQueue(const char* data, uint32_t length, uint32_t
     length -= copy_length;
     copy_length = std::min(length, kDefaultByteArraySize_);
   }
-  return kSuccess;
 }
 
 bool SelfEncryptor::GetLengthForSequencer(uint64_t position, uint32_t* length) {
@@ -547,8 +538,8 @@ void SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
   GetPadIvKey(chunk_num, key, iv, pad, false);
   NonEmptyString content;
   try {
-  content = buffer_.Get(data_map_.chunks[chunk_num].hash);
-  } catch(std::exception &e) {
+    content = buffer_.Get(data_map_.chunks[chunk_num].hash);
+  } catch (std::exception& e) {
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
     BOOST_THROW_EXCEPTION(e);
   }
@@ -607,17 +598,17 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, ByteArray key, ByteArra
   static_cast<void>(copied);
 }
 
-int SelfEncryptor::ProcessMainQueue() {
+void SelfEncryptor::ProcessMainQueue() {
   SCOPED_PROFILE
   if (retrievable_from_queue_ < kMaxChunkSize)
-    return kSuccess;
+    return;
 
   uint32_t chunks_to_process(retrievable_from_queue_ / kMaxChunkSize);
   if ((retrievable_from_queue_ % kMaxChunkSize) < kMinChunkSize)
     --chunks_to_process;
 
   if (chunks_to_process == 0)
-    return kSuccess;
+    return;
 
   assert((last_chunk_position_ - queue_start_position_) % kMaxChunkSize == 0);
 
@@ -652,7 +643,6 @@ int SelfEncryptor::ProcessMainQueue() {
     first_chunk_index = 2;
   }
 
-  int result(kSuccess);
   std::vector<std::future<void>> fut2;
   for (int64_t i = first_chunk_index; i < chunks_to_process; ++i) {
     fut2.emplace_back((std::async([=]() {
@@ -664,11 +654,11 @@ int SelfEncryptor::ProcessMainQueue() {
       res.wait();
   }
 
-  if (result == kSuccess && chunks_to_process > 0) {
+  if (chunks_to_process > 0) {
     uint32_t start_point(chunks_to_process * kMaxChunkSize);
     uint32_t move_size(retrievable_from_queue_ - start_point);
     if (start_point < move_size)
-      return result;
+      return;
     uint32_t copied =
         MemCopy(main_encrypt_queue_, 0, main_encrypt_queue_.get() + start_point, move_size);
     assert(move_size == copied);
@@ -678,7 +668,6 @@ int SelfEncryptor::ProcessMainQueue() {
     memset(main_encrypt_queue_.get() + retrievable_from_queue_, 0,
            kQueueCapacity_ - retrievable_from_queue_);
   }
-  return result;
 }
 
 void SelfEncryptor::EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length) {
@@ -810,11 +799,7 @@ bool SelfEncryptor::Flush() {
   bool pre_chunk_pre_hash_modified(chunk1_modified);
 
   // Empty queue (after this call it will contain 0 or 1 chunks).
-  int result(ProcessMainQueue());
-  if (result != kSuccess) {
-    LOG(kError) << "Failed in Flush.";
-    return false;
-  }
+  ProcessMainQueue();
 
   const uint32_t kOldChunkCount(static_cast<uint32_t>(data_map_.chunks.size()));
   const uint32_t kNewChunkCount(static_cast<uint32_t>(last_chunk_position_ / normal_chunk_size_) +
