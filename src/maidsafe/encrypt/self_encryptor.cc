@@ -23,6 +23,7 @@
 #include <set>
 #include <tuple>
 #include <utility>
+#include <memory>
 
 #ifdef __MSVC__
 #pragma warning(push, 1)
@@ -44,6 +45,7 @@
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/xor.h"
+#include "maidsafe/encrypt/cache.h"
 #include "maidsafe/encrypt/data_map.pb.h"
 #include "maidsafe/encrypt/sequencer.h"
 
@@ -56,32 +58,6 @@ const EncryptionAlgorithm kDataMapEncryptionVersion =
     EncryptionAlgorithm::kDataMapEncryptionVersion0;
 
 namespace {
-
-/*
-void DebugPrint(bool encrypting,
-                uint32_t chunk_num,
-                ByteArray pad,
-                ByteArray key,
-                ByteArray iv,
-                const byte* plain_data,
-                uint32_t plain_data_length,
-                const std::string &encrypted_data) {
-  std::string pad_str(Base64Substr(std::string(
-      reinterpret_cast<char*>(pad.get()), detail::kPadSize)));
-  std::string key_str(Base64Substr(std::string(
-      reinterpret_cast<char*>(key.get()), crypto::AES256_KeySize)));
-  std::string iv_str(Base64Substr(std::string(
-      reinterpret_cast<char*>(iv.get()), crypto::AES256_IVSize)));
-  std::string plain(Base64Substr(crypto::Hash<crypto::SHA512>(std::string(
-      reinterpret_cast<const char*>(plain_data), plain_data_length))));
-  std::string encrypted(Base64Substr(crypto::Hash<crypto::SHA512>(
-      encrypted_data)));
-  LOG(kInfo) << (encrypting ? "\nEncrypt chunk " : "\nDecrypt chunk ")
-             << chunk_num << "\nPad: " << pad_str << "   Key: " << key_str
-             << "   IV: " << iv_str << "   Plain: " << plain << "   Encrypted: "
-             << encrypted;
-}
-*/
 
 DataMap DecryptUsingVersion0(const Identity& parent_id, const Identity& this_id,
                              const protobuf::EncryptedDataMap& protobuf_encrypted_data_map) {
@@ -184,12 +160,11 @@ DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
 
 SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
                              std::function<NonEmptyString(const std::string&)> get_from_store,
-                             int num_procs)
+                             int /* num_procs */)
     : data_map_(data_map),
       kOriginalDataMap_(data_map),
       sequencer_(new Sequencer),
-      kDefaultByteArraySize_(num_procs == 0 ? kMaxChunkSize * Concurrency()
-                                            : kMaxChunkSize * num_procs),
+      kDefaultByteArraySize_(kMaxChunkSize * 8),
       file_size_(0),
       last_chunk_position_(0),
       truncated_file_size_(0),
@@ -203,13 +178,10 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
       buffer_(buffer),
       get_from_store_(get_from_store),
       current_position_(0),
+      read_cache_(new Cache),
       prepared_for_writing_(false),
       flushed_(true),
-      read_cache_(),
-      cache_start_position_(0),
-      prepared_for_reading_(),
       last_read_position_(0),
-      kMaxBufferSize_(20 * kDefaultByteArraySize_),
       data_mutex_() {
   if (data_map.self_encryption_version != EncryptionAlgorithm::kSelfEncryptionVersion0)
     BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::invalid_encryption_version));
@@ -243,10 +215,7 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
   if (length == 0)
     return true;
 
-  if (PrepareToWrite(length, position) != kSuccess) {
-    LOG(kError) << "Failed to write " << length << " bytes at position " << position;
-    return false;
-  }
+  PrepareToWrite(length, position);
   PutToReadCache(data, length, position);
 
   uint32_t write_length(length);
@@ -299,7 +268,9 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
   return true;
 }
 
-int SelfEncryptor::PrepareToWrite(uint32_t length, uint64_t position) {
+bool SelfEncryptor::SmallFile() { return file_size_ < kDefaultByteArraySize_; }
+
+void SelfEncryptor::PrepareToWrite(uint32_t length, uint64_t position) {
   SCOPED_PROFILE
   if (position + length > file_size_) {
     file_size_ = position + length;
@@ -309,7 +280,7 @@ int SelfEncryptor::PrepareToWrite(uint32_t length, uint64_t position) {
   flushed_ = false;
 
   if (prepared_for_writing_)
-    return kSuccess;
+    return;
 
   if (!main_encrypt_queue_) {
     main_encrypt_queue_ = GetNewByteArray(kQueueCapacity_);
@@ -368,26 +339,12 @@ int SelfEncryptor::PrepareToWrite(uint32_t length, uint64_t position) {
   }
 
   prepared_for_writing_ = true;
-  return kSuccess;
 }
 
 void SelfEncryptor::PutToReadCache(const char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
-  if (!prepared_for_reading_)
-    return;
-  if (position < cache_start_position_ + kDefaultByteArraySize_ &&
-      position + length >= cache_start_position_) {
-    uint32_t data_offset(0), cache_offset(0);
-    uint32_t copy_size(length);
-    if (position < cache_start_position_) {
-      data_offset = static_cast<uint32_t>(cache_start_position_ - position);
-      copy_size -= data_offset;
-    } else {
-      cache_offset = static_cast<uint32_t>(position - cache_start_position_);
-    }
-    copy_size = std::min(copy_size, kDefaultByteArraySize_ - cache_offset);
-    memcpy(read_cache_.get() + cache_offset, data + data_offset, copy_size);
-  }
+  std::vector<char> temp(data, data + length);
+  read_cache_->Put(temp, position);
 }
 
 void SelfEncryptor::CalculateSizes(bool force) {
@@ -962,38 +919,15 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
   if (length == 0)
     return true;
-  PrepareToRead();
-
-  if (length < kDefaultByteArraySize_) {
-    if (position < cache_start_position_ ||
-        position + length > cache_start_position_ + kDefaultByteArraySize_) {
-      // populate read_cache_.
-      if (Transmogrify(read_cache_.get(), kDefaultByteArraySize_, position) != kSuccess) {
-        LOG(kError) << "Failed to read " << length << " bytes at position " << position;
-        return false;
-      }
-      cache_start_position_ = position;
-    }
-    memcpy(data, read_cache_.get() + static_cast<uint32_t>(position - cache_start_position_),
-           length);
-  } else {
-    // length requested larger than cache size, just go ahead and read
-    if (Transmogrify(data, length, position) != kSuccess) {
-      LOG(kError) << "Failed to read " << length << " bytes at position " << position;
+  std::vector<char> temp;
+  if (read_cache_->Get(temp, length, position)) {
+    if (temp.size() != length)
       return false;
-    }
+    memcpy(data, temp.data(), length);
+  } else {
+    Transmogrify(data, length, position);
   }
   return true;
-}
-
-void SelfEncryptor::PrepareToRead() {
-  SCOPED_PROFILE
-  if (prepared_for_reading_)
-    return;
-
-  read_cache_.reset(new char[kDefaultByteArraySize_]);
-  cache_start_position_ = std::numeric_limits<uint64_t>::max();
-  prepared_for_reading_ = true;
 }
 
 int SelfEncryptor::Transmogrify(char* data, uint32_t length, uint64_t position) {
@@ -1053,8 +987,12 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
            std::min(length, static_cast<uint32_t>(file_size_ - position)));
   }
 
-  uint32_t first_chunk_index =
-      std::min(num_chunks - 1, static_cast<uint32_t>(position / kMaxChunkSize));
+  uint32_t first_chunk_index;
+  if (position == 0)
+    first_chunk_index = num_chunks - 1;
+  else
+    first_chunk_index = std::min(num_chunks - 1, static_cast<uint32_t>(position / kMaxChunkSize));
+
   uint32_t first_chunk_offset(position % kMaxChunkSize);
   uint32_t first_chunk_size(0);
   if (data_map_.chunks[first_chunk_index].size > first_chunk_offset)

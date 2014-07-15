@@ -45,6 +45,7 @@ extern const EncryptionAlgorithm kSelfEncryptionVersion;
 extern const EncryptionAlgorithm kDataMapEncryptionVersion;
 
 class Sequencer;
+class Cache; 
 
 crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& this_id,
                                   const DataMap& data_map);
@@ -83,7 +84,11 @@ class SelfEncryptor {
   // it will be empty after.  Chunks read in from data_map_ are deleted from
   // chunk_store_.  The main_encrypt_queue_ is set to start at "position" if it
   // is beyond the end of the first 2 chunks.
-  int PrepareToWrite(uint32_t length, uint64_t position);
+  void PrepareToWrite(uint32_t length, uint64_t position);
+  // If file < * Chunks then its all in the read_cache_
+  bool SmallFile();
+  // is read cache full
+  bool CacheFull();
   // Copies any relevant data to read_cache_.
   void PutToReadCache(const char* data, uint32_t length, uint64_t position);
   // Copies any relevant data to read_buffer_.
@@ -128,12 +133,6 @@ class SelfEncryptor {
   // old_n1_pre_hash and old_n2_pre_hash fields completed if not already done.
   void CalculatePreHash(uint32_t chunk_num, const byte* data, uint32_t length, bool* modified);
   void CalculateSizes(bool force);
-  // If prepared_for_reading_ is not already true, this initialises read_cache_.
-  void PrepareToRead();
-  // Buffer will be much larger than Cache, trying to buffer the whole file
-  // or the first block with size of defined times of kDefaultByteArraySize_
-  // If can't read from buffer, read will try to read from cache or the chunks
-  bool ReadFromBuffer(char* data, uint32_t length, uint64_t position);
   // Handles reading from populated data_map_ and all the various write buffers.
   int Transmogrify(char* data, uint32_t length, uint64_t position);
   void ReadDataMapChunks(char* data, uint32_t length, uint64_t position);
@@ -158,12 +157,9 @@ class SelfEncryptor {
   DataBuffer<std::string>& buffer_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
   uint64_t current_position_;
+  std::unique_ptr<Cache> read_cache_;
   bool prepared_for_writing_, flushed_;
-  std::unique_ptr<char[]> read_cache_;
-  uint64_t cache_start_position_;
-  bool prepared_for_reading_;
   uint64_t last_read_position_;
-  const uint32_t kMaxBufferSize_;
   mutable std::mutex data_mutex_;
 };
 
