@@ -27,13 +27,12 @@ namespace maidsafe {
 namespace encrypt {
 
 
-Cache::Cache(uint32_t max_size)
-    : cache_(), max_size_(max_size), start_(0) {}
+Cache::Cache(uint32_t max_size) : cache_(), max_size_(max_size), start_(0) {}
 
 
 void Cache::Put(std::vector<char> data, uint64_t position) {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (position < start_ || (position > (start_ + cache_.size()) < position)) {
+  if (position < start_ || (position > (start_ + cache_.size()))) {
     cache_.clear();
     start_ = position;
     cache_ = std::move(data);

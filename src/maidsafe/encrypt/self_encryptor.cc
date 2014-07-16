@@ -585,10 +585,10 @@ void SelfEncryptor::ProcessMainQueue() {
         DeleteChunk(chunk_index);
       }
     })));
+  }
     // thread barrier emulation
     for (auto& res : fut)
       res.wait();
-  }
 
   int64_t first_chunk_index(0);
   if (data_map_.chunks[first_queue_chunk_index - 1].pre_hash_state == ChunkDetails::kEmpty ||
@@ -606,10 +606,10 @@ void SelfEncryptor::ProcessMainQueue() {
       EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
                    main_encrypt_queue_.get() + (i * kMaxChunkSize), kMaxChunkSize);
     })));
+  }
     // thread barrier emulation
     for (auto& res : fut2)
       res.wait();
-  }
 
   if (chunks_to_process > 0) {
     uint32_t start_point(chunks_to_process * kMaxChunkSize);
@@ -979,9 +979,9 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
           DecryptChunk(static_cast<uint32_t>(i), temp.get() + offset);
         }
       }));
+    }
       for (auto& res : fut)
         res.wait();
-    }
 
     memcpy(data, temp.get() + position,
            std::min(length, static_cast<uint32_t>(file_size_ - position)));
@@ -1026,10 +1026,10 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
         }
       }
     }));
+  }
     // thread barrier emulation
     for (auto& res : fut2)
       res.wait();
-  }
 }
 
 void SelfEncryptor::ReadInProcessData(char* data, uint32_t length, uint64_t position) {
