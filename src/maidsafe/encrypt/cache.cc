@@ -40,9 +40,18 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
     start_ = position;
     cache_ = std::move(data);
   } else {
-    if (start_ == 0)
-      start_ = position;
-    std::copy(std::begin(data), std::end(data), std::begin(cache_) + position - start_);
+    // auto end_before = cache_.size();
+    // append data to end
+    // std::copy(std::begin(data), std::end(data), std::back_inserter(cache_));
+    cache_.reserve(cache_.size() + data.size());
+    cache_.insert(std::begin(cache_) + position - start_, std::begin(data), std::end(data));
+    // put data in correct position
+    // std::rotate(std::begin(cache_) + end_before, std::begin(cache_) + end_before + data.size(),
+    //             std::begin(cache_) + position);
+    // remove invalidated data
+    cache_.erase(
+        std::begin(cache_) + position - start_ + data.size(),
+        std::min(std::begin(cache_) + position - start_ + (2 * data.size()), std::end(cache_)));
   }
   while (cache_.size() > max_size_) {
     cache_.erase(std::begin(cache_), std::begin(cache_) + kMaxChunkSize);
@@ -58,11 +67,12 @@ bool Cache::Get(std::vector<char>& data, uint32_t length, uint64_t file_position
   if (file_position > start_ + cache_.size() || file_position < start_)
     return false;
 
-  auto offset(file_position + start_);
+  auto offset(file_position - start_);
   if (offset + length > cache_.size())
     return false;
 
-  std::copy_n(std::begin(cache_) + offset, length, std::back_inserter(data));
+  // std::copy_n(std::begin(cache_) + offset, length, std::back_inserter(data));
+  data.insert(std::begin(data), std::begin(cache_) + offset, std::begin(cache_) + offset + length);
   return true;
 }
 

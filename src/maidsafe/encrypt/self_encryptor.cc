@@ -164,7 +164,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
     : data_map_(data_map),
       kOriginalDataMap_(data_map),
       sequencer_(new Sequencer),
-      kDefaultByteArraySize_(kMaxChunkSize * 8),
+      kDefaultByteArraySize_(kMaxChunkSize * 16),
       file_size_(0),
       last_chunk_position_(0),
       truncated_file_size_(0),
@@ -178,7 +178,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
       buffer_(buffer),
       get_from_store_(get_from_store),
       current_position_(0),
-      read_cache_(new Cache),
+      read_cache_(new Cache(kDefaultByteArraySize_)),
       prepared_for_writing_(false),
       flushed_(true),
       last_read_position_(0),
@@ -267,8 +267,6 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
 
   return true;
 }
-
-bool SelfEncryptor::SmallFile() { return file_size_ < kDefaultByteArraySize_; }
 
 void SelfEncryptor::PrepareToWrite(uint32_t length, uint64_t position) {
   SCOPED_PROFILE
@@ -498,7 +496,7 @@ void SelfEncryptor::DecryptChunk(uint32_t chunk_num, byte* data) {
     content = buffer_.Get(data_map_.chunks[chunk_num].hash);
   } catch (std::exception& e) {
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    BOOST_THROW_EXCEPTION(e);
+    throw(e);
   }
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), crypto::AES256_KeySize,
                                                           iv.get());
@@ -574,7 +572,7 @@ void SelfEncryptor::ProcessMainQueue() {
                                    first_queue_chunk_index + chunks_to_process));
   std::vector<std::future<void>> fut;
   for (int64_t i = 0; i < chunks_to_process; ++i) {
-    fut.emplace_back((std::async([=]() {
+    fut.emplace_back((std::async(std::launch::async, [=]() {
       bool modified(false);
       uint32_t chunk_index(first_queue_chunk_index + static_cast<uint32_t>(i));
       data_map_.chunks[chunk_index].pre_hash_state = ChunkDetails::kOutdated;
@@ -602,7 +600,7 @@ void SelfEncryptor::ProcessMainQueue() {
 
   std::vector<std::future<void>> fut2;
   for (int64_t i = first_chunk_index; i < chunks_to_process; ++i) {
-    fut2.emplace_back((std::async([=]() {
+    fut2.emplace_back((std::async(std::launch::async, [=]() {
       EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
                    main_encrypt_queue_.get() + (i * kMaxChunkSize), kMaxChunkSize);
     })));
@@ -659,7 +657,7 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length
   } catch (std::exception& e) {
     LOG(kError) << e.what() << "Could not store " << Base64Substr(data_map_.chunks[chunk_num].hash);
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    data_map_.chunks[chunk_num].storage_state = ChunkDetails::kUnstored;
+    throw(e); 
   }
 
   data_map_.chunks[chunk_num].size = length;  // keep pre-compressed length
@@ -917,18 +915,47 @@ bool SelfEncryptor::Flush() {
 
 bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
-  if (length == 0)
-    return true;
+  // if (length == 0)
+  //   return true;
   std::vector<char> temp;
+  temp.reserve(length);
   if (read_cache_->Get(temp, length, position)) {
     if (temp.size() != length)
       return false;
     memcpy(data, temp.data(), length);
+    LOG(kInfo) << " Cache hit";
+    return true;
   } else {
-    Transmogrify(data, length, position);
+    LOG(kInfo) << " Cache miss";
+  }
+  // } else {
+  //   Transmogrify(data, length, position);
+  // }
+  // return true;
+  // SCOPED_PROFILE
+  if (length == 0)
+    return true;
+
+  if (length < kDefaultByteArraySize_) {
+  char* tmp = new char[kDefaultByteArraySize_];
+      // populate read_cache_.
+    if (Transmogrify(tmp, kDefaultByteArraySize_, position) != kSuccess) {
+      LOG(kError) << "Failed to read " << length << " bytes at position " << position;
+      return false;
+    }
+    PutToReadCache(tmp, kDefaultByteArraySize_, position); 
+    memcpy(data, tmp, length);
+    delete [] tmp;
+  } else {
+    // length requested larger than cache size, just go ahead and read
+    if (Transmogrify(data, length, position) != kSuccess) {
+      LOG(kError) << "Failed to read " << length << " bytes at position " << position;
+      return false;
+    }
   }
   return true;
 }
+
 
 int SelfEncryptor::Transmogrify(char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
@@ -972,7 +999,7 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
     ByteArray temp(GetNewByteArray(static_cast<uint32_t>(file_size_)));
     std::vector<std::future<void>> fut;
     for (int64_t i = 0; i < num_chunks; ++i) {
-      fut.emplace_back(std::async([=]() {
+      fut.emplace_back(std::async(std::launch::async, [=]() {
         uint32_t this_chunk_size(data_map_.chunks[static_cast<uint32_t>(i)].size);
         if (this_chunk_size != 0) {
           uint64_t offset = (static_cast<uint32_t>(i) * normal_chunk_size_);
@@ -988,12 +1015,8 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
     return;
   }
 
-  uint32_t first_chunk_index;
-  if (position == 0)
-    first_chunk_index = num_chunks - 1;
-  else
-    first_chunk_index = std::min(num_chunks - 1, static_cast<uint32_t>(position / kMaxChunkSize));
-
+  uint32_t first_chunk_index =
+      std::min(num_chunks - 1, static_cast<uint32_t>(position / kMaxChunkSize));
   uint32_t first_chunk_offset(position % kMaxChunkSize);
   uint32_t first_chunk_size(0);
   if (data_map_.chunks[first_chunk_index].size > first_chunk_offset)
@@ -1007,7 +1030,7 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
 
   std::vector<std::future<void>> fut2;
   for (int64_t i = first_chunk_index; i <= last_chunk_index; ++i) {
-    fut2.emplace_back(std::async([=]() {
+    fut2.emplace_back(std::async(std::launch::async, [=]() {
       uint32_t this_chunk_size(data_map_.chunks[static_cast<uint32_t>(i)].size);
       if (this_chunk_size != 0) {
         if (i == first_chunk_index) {
@@ -1190,7 +1213,7 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
     buffer_.Delete(data_map_.chunks[chunk_num].hash);
   } catch (std::exception& e) {
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    BOOST_THROW_EXCEPTION(e);
+    throw(e); 
   }
 }
 
