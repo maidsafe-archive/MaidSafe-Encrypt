@@ -634,7 +634,7 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
     for (size_t i = 0; i != parts; ++i) {
       EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered[i].data()),
                                       static_cast<uint32_t>(recovered[i].size()), count));
-      EXPECT_EQ(original[i], recovered[i]);
+      EXPECT_TRUE(original[i] == recovered[i]);
       count += original[i].size();
     }
   }

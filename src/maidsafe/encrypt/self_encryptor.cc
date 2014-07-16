@@ -588,7 +588,7 @@ void SelfEncryptor::ProcessMainQueue() {
   }
     // thread barrier emulation
     for (auto& res : fut)
-      res.wait();
+      res.get();
 
   int64_t first_chunk_index(0);
   if (data_map_.chunks[first_queue_chunk_index - 1].pre_hash_state == ChunkDetails::kEmpty ||
@@ -609,7 +609,7 @@ void SelfEncryptor::ProcessMainQueue() {
   }
     // thread barrier emulation
     for (auto& res : fut2)
-      res.wait();
+      res.get();
 
   if (chunks_to_process > 0) {
     uint32_t start_point(chunks_to_process * kMaxChunkSize);
@@ -981,10 +981,11 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
       }));
     }
       for (auto& res : fut)
-        res.wait();
+        res.get();
 
     memcpy(data, temp.get() + position,
            std::min(length, static_cast<uint32_t>(file_size_ - position)));
+    return;
   }
 
   uint32_t first_chunk_index;
@@ -1029,7 +1030,7 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
   }
     // thread barrier emulation
     for (auto& res : fut2)
-      res.wait();
+      res.get();
 }
 
 void SelfEncryptor::ReadInProcessData(char* data, uint32_t length, uint64_t position) {
