@@ -32,25 +32,33 @@ Cache::Cache(uint32_t max_size) : cache_(), max_size_(max_size), start_(0) {}
 
 void Cache::Put(std::vector<char> data, uint64_t position) {
   std::lock_guard<std::mutex> lock(mutex_);
+  if (data.empty())
+    return;
+
   if (position < start_ || (position > (start_ + cache_.size()))) {
     cache_.clear();
     start_ = position;
     cache_ = std::move(data);
   } else {
-    std::copy_n(std::begin(data), data.size(), std::back_inserter(cache_));
+    if (start_ == 0)
+      start_ = position;
+    std::copy(std::begin(data), std::end(data), std::begin(cache_) + position - start_);
   }
   while (cache_.size() > max_size_) {
     cache_.erase(std::begin(cache_), std::begin(cache_) + kMaxChunkSize);
-    start_ -= kMaxChunkSize;
+    start_ += kMaxChunkSize;
   }
 }
 
 bool Cache::Get(std::vector<char>& data, uint32_t length, uint64_t file_position) const {
   std::lock_guard<std::mutex> lock(mutex_);
+  if (cache_.empty())
+    return false;
+
   if (file_position > start_ + cache_.size() || file_position < start_)
     return false;
 
-  auto offset(file_position - start_);
+  auto offset(file_position + start_);
   if (offset + length > cache_.size())
     return false;
 
