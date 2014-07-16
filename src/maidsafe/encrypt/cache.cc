@@ -36,7 +36,7 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
   if (position < start_ || (position > (start_ + cache_.size()) < position)) {
     cache_.clear();
     start_ = position;
-    cache_ = data;
+    cache_ = std::move(data);
   } else {
     std::copy_n(std::begin(data), data.size(), std::back_inserter(cache_));
   }
