@@ -36,15 +36,15 @@ namespace test {
 
 class EncryptTestBase {
  public:
-  explicit EncryptTestBase(int num_procs)
+  EncryptTestBase()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        num_procs_(num_procs),
+        num_procs_(RandomUint32() % (Concurrency() + 1)),
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
                      [](const std::string& name, const NonEmptyString&) {
-                        LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
-                        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
-                      },
-                      *test_dir_),
+                         LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
+                         BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
+                     },
+                     *test_dir_),
         data_map_(),
         get_from_store_([this](const std::string& name) { return local_store_.Get(name); }),
         self_encryptor_(new SelfEncryptor(data_map_, local_store_, get_from_store_, num_procs_)),
