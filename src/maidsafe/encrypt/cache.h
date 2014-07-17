@@ -16,6 +16,26 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
+/*############################################ Documentation ######################################
+This is a simple cache for encrypt library only. It is based on vectors of chars and not intended
+for any other types. It may be templated easily enough though as most fundamental types should be
+ok.
+The purpose is to be used as a cache, therefore mostly when a read is requested it will be a cache
+hit, but not every read. If this object works properly and 80% plus reads are cache hits then it is 
+considered to be doing its job. It is intentionally pretty dumb and based on a simple design.
+
+--------------------------------------------
+^            ^                              ^
+start_       Insertion point               end (cache_.size())
+
+If data is put here if at least the position it requests in the cache, or the position plus length
+will put the data in the cache (so a request for a position < start_ but where position + length
+puts it in the cache) The object is optimised fro forward reading cache operations, which may prove 
+to be a liability. A double ended cache object (list/deque etc.) has been tested and is 
+considerably slower (certainly in our tests and benchmarks), so this choice will have to be made 
+with that in mind. As is this cache seems to provide the functionality we require.
+*/
+
 #ifndef MAIDSAFE_ENCRYPT_CACHE_H_
 #define MAIDSAFE_ENCRYPT_CACHE_H_
 
@@ -38,18 +58,12 @@ class Cache {
   Cache operator=(Cache other) = delete;
   void Put(std::vector<char> data, uint64_t file_position);
   bool Get(std::vector<char>& data, uint32_t length, uint64_t file_position) const;
-  // bool InCache(uint32_t length, uint64_t file_position) const;
-  // uint64_t StartPosition() const;
-  // uint64_t EndPosition() const;
-  // bool Size() const;
-  // bool Full() const;
 
  private:
   mutable std::mutex mutex_;
   std::vector<char> cache_;
   uint32_t max_size_;
   uint64_t start_;
-  // uint64_t end_;
 };
 
 

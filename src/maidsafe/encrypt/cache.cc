@@ -32,7 +32,7 @@ Cache::Cache(uint32_t max_size) : cache_(), max_size_(max_size), start_(0) {}
 
 void Cache::Put(std::vector<char> data, uint64_t position) {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (data.empty())
+  if (data.empty() || (max_size_ == 0))
     return;
 
   if (position < start_ || (position > (start_ + cache_.size()))) {
@@ -40,23 +40,22 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
     start_ = position;
     cache_ = std::move(data);
   } else {
-    // auto end_before = cache_.size();
-    // append data to end
-    // std::copy(std::begin(data), std::end(data), std::back_inserter(cache_));
-    cache_.reserve(cache_.size() + data.size());
-    cache_.insert(std::begin(cache_) + position - start_, std::begin(data), std::end(data));
-    // put data in correct position
-    // std::rotate(std::begin(cache_) + end_before, std::begin(cache_) + end_before + data.size(),
-    //             std::begin(cache_) + position);
+    // assume position > start
+    auto offset(position - start_);
+    auto data_size = data.size();
+    cache_.reserve(cache_.size() + data_size);
+    // Insert data to offset
+    cache_.insert(std::begin(cache_) + offset, std::begin(data), std::end(data));
     // remove invalidated data
-    if (data.size() != cache_.size())
+    if (cache_.size() > data.size())
     cache_.erase(
-        std::begin(cache_) + position - start_ + data.size(),
-        std::min(std::begin(cache_) + position - start_ + (2 * data.size()), std::end(cache_)));
+        std::begin(cache_) + offset + data_size,
+        std::begin(cache_) + (2 * data_size) - offset);
   }
-  while (cache_.size() > max_size_) {
-    cache_.erase(std::begin(cache_), std::begin(cache_) + kMaxChunkSize);
-    start_ += kMaxChunkSize;
+  // grown too large, split in two (from the beginning)
+  if (cache_.size() > max_size_) {
+    cache_.erase(std::begin(cache_), std::begin(cache_) + (max_size_ / 2));
+    start_ += (max_size_ / 2);
   }
 }
 
