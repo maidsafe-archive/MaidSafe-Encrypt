@@ -49,6 +49,7 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
     // std::rotate(std::begin(cache_) + end_before, std::begin(cache_) + end_before + data.size(),
     //             std::begin(cache_) + position);
     // remove invalidated data
+    if (data.size() != cache_.size())
     cache_.erase(
         std::begin(cache_) + position - start_ + data.size(),
         std::min(std::begin(cache_) + position - start_ + (2 * data.size()), std::end(cache_)));
