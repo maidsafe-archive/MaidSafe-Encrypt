@@ -189,7 +189,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
     LOG(kError) << "Need to have a non-null get_from_store functor.";
     BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
   }
-  if (data_map.chunks.empty()) {
+  if (data_map.chunks.empty() || !data_map.content.empty()) {
     file_size_ = data_map.content.size();
     last_chunk_position_ = std::numeric_limits<uint64_t>::max();
     normal_chunk_size_ = 0;
@@ -971,7 +971,7 @@ int SelfEncryptor::Transmogrify(char* data, uint32_t length, uint64_t position) 
                   << " with file size of " << file_size_ << " bytes.";
       return kInvalidPosition;
     }
-    if (prepared_for_writing_ || ! data_map_.content.empty()) {
+    if (prepared_for_writing_) {
       uint32_t copy_size = std::min(length, (3 * kMinChunkSize) - static_cast<uint32_t>(position));
       memcpy(data, chunk0_raw_.get() + position, copy_size);
     } else {
