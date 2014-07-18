@@ -48,9 +48,8 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
     cache_.insert(std::begin(cache_) + offset, std::begin(data), std::end(data));
     // remove invalidated data
     if (cache_.size() > data.size())
-    cache_.erase(
-        std::begin(cache_) + offset + data_size,
-       std::begin(cache_) + std::min(offset + (2 * data_size), cache_.size()));
+      cache_.erase(std::begin(cache_) + offset + data_size,
+                   std::begin(cache_) + std::min(offset + (2 * data_size), cache_.size()));
   }
   // grown too large, split in two (from the beginning)
   if (cache_.size() > max_size_) {
@@ -64,14 +63,14 @@ bool Cache::Get(std::vector<char>& data, uint32_t length, uint64_t file_position
   if (cache_.empty())
     return false;
 
-  if (file_position > cache_start_position_ + cache_.size() || file_position < cache_start_position_)
+  if (file_position > cache_start_position_ + cache_.size() ||
+      file_position < cache_start_position_)
     return false;
 
   auto offset(file_position - cache_start_position_);
   if (offset + length > cache_.size())
     return false;
 
-  // std::copy_n(std::begin(cache_) + offset, length, std::back_inserter(data));
   data.insert(std::begin(data), std::begin(cache_) + offset, std::begin(cache_) + offset + length);
   return true;
 }

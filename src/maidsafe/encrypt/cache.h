@@ -52,7 +52,7 @@ namespace encrypt {
 
 class Cache {
  public:
-  Cache(uint32_t max_size = kMaxChunkSize * 8);
+  explicit Cache(uint32_t max_size = kMaxChunkSize * 8);
   ~Cache() = default;
   Cache(const Cache& other) = delete;
   Cache(const Cache&& other) = delete;
