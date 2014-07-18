@@ -38,6 +38,7 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
   if (position < cache_start_position_ || (position > (cache_start_position_ + cache_.size()))) {
     cache_.clear();
     cache_start_position_ = position;
+    cache_.reserve(cache_.size() + data.size());
     cache_ = std::move(data);
   } else {
     // assume position > start

@@ -584,9 +584,9 @@ void SelfEncryptor::ProcessMainQueue() {
       }
     })));
   }
-    // thread barrier emulation
-    for (auto& res : fut)
-      res.get();
+  // thread barrier emulation
+  for (auto& res : fut)
+    res.get();
 
   int64_t first_chunk_index(0);
   if (data_map_.chunks[first_queue_chunk_index - 1].pre_hash_state == ChunkDetails::kEmpty ||
@@ -605,9 +605,9 @@ void SelfEncryptor::ProcessMainQueue() {
                    main_encrypt_queue_.get() + (i * kMaxChunkSize), kMaxChunkSize);
     })));
   }
-    // thread barrier emulation
-    for (auto& res : fut2)
-      res.get();
+  // thread barrier emulation
+  for (auto& res : fut2)
+    res.get();
 
   if (chunks_to_process > 0) {
     uint32_t start_point(chunks_to_process * kMaxChunkSize);
@@ -657,7 +657,7 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length
   } catch (std::exception& e) {
     LOG(kError) << e.what() << "Could not store " << Base64Substr(data_map_.chunks[chunk_num].hash);
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    throw(e); 
+    throw(e);
   }
 
   data_map_.chunks[chunk_num].size = length;  // keep pre-compressed length
@@ -915,8 +915,8 @@ bool SelfEncryptor::Flush() {
 
 bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
-  // if (length == 0)
-  //   return true;
+  if (length == 0 || position + length > file_size_)
+    return false;
   std::vector<char> temp;
   temp.reserve(length);
   if (read_cache_->Get(temp, length, position)) {
@@ -936,29 +936,32 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   if (length == 0)
     return true;
 
-  if (length < kDefaultByteArraySize_) {
-  char* tmp = new char[kDefaultByteArraySize_];
-      // populate read_cache_.
-    if (Transmogrify(tmp, kDefaultByteArraySize_, position) != kSuccess) {
-      LOG(kError) << "Failed to read " << length << " bytes at position " << position;
-      return false;
-    }
-    PutToReadCache(tmp, kDefaultByteArraySize_, position); 
-    memcpy(data, tmp, length);
-    delete [] tmp;
-  } else {
-    // length requested larger than cache size, just go ahead and read
-    if (Transmogrify(data, length, position) != kSuccess) {
-      LOG(kError) << "Failed to read " << length << " bytes at position " << position;
-      return false;
-    }
+  // if (length < kDefaultByteArraySize_) {
+  // char* tmp = new char[kDefaultByteArraySize_];
+  //     // populate read_cache_.
+  //   if (Transmogrify(tmp, kDefaultByteArraySize_, position) != kSuccess) {
+  //     LOG(kError) << "Failed to read " << length << " bytes at position " << position;
+  //     return false;
+  //   }
+  //   PutToReadCache(tmp, kDefaultByteArraySize_, position);
+  //   memcpy(data, tmp, length);
+  //   delete [] tmp;
+  // } else {
+  // length requested larger than cache size, just go ahead and read
+  if (Transmogrify(data, length, position) != kSuccess) {
+    LOG(kError) << "Failed to read " << length << " bytes at position " << position;
+    return false;
+    // }
   }
+  PutToReadCache(data, length, position);
   return true;
 }
 
 
 int SelfEncryptor::Transmogrify(char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
+  if (data_map_.chunks.empty() || position >= file_size_)
+    return kInvalidPosition;
   memset(data, 0, length);
 
   // For tiny files, all data is in data_map_.content or chunk0_raw_.
@@ -968,7 +971,7 @@ int SelfEncryptor::Transmogrify(char* data, uint32_t length, uint64_t position) 
                   << " with file size of " << file_size_ << " bytes.";
       return kInvalidPosition;
     }
-    if (prepared_for_writing_) {
+    if (prepared_for_writing_ || ! data_map_.content.empty()) {
       uint32_t copy_size = std::min(length, (3 * kMinChunkSize) - static_cast<uint32_t>(position));
       memcpy(data, chunk0_raw_.get() + position, copy_size);
     } else {
@@ -991,7 +994,7 @@ int SelfEncryptor::Transmogrify(char* data, uint32_t length, uint64_t position) 
 
 void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t position) {
   SCOPED_PROFILE
-  if (data_map_.chunks.empty() || position >= file_size_)
+  if (data_map_.chunks.empty() || kMinChunkSize > file_size_)
     return;
   uint32_t num_chunks = static_cast<uint32_t>(data_map_.chunks.size());
   if (normal_chunk_size_ != kMaxChunkSize) {
@@ -1007,8 +1010,8 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
         }
       }));
     }
-      for (auto& res : fut)
-        res.get();
+    for (auto& res : fut)
+      res.get();
 
     memcpy(data, temp.get() + position,
            std::min(length, static_cast<uint32_t>(file_size_ - position)));
@@ -1036,7 +1039,8 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
         if (i == first_chunk_index) {
           ByteArray temp(GetNewByteArray(this_chunk_size));
           DecryptChunk(static_cast<uint32_t>(i), temp.get());
-          memcpy(data, temp.get() + first_chunk_offset, first_chunk_size);
+          memcpy(data, temp.get() + first_chunk_offset,
+                 std::min(length, first_chunk_size));
         } else if (i == last_chunk_index) {
           ByteArray temp(GetNewByteArray(this_chunk_size));
           DecryptChunk(static_cast<uint32_t>(i), temp.get());
@@ -1051,9 +1055,9 @@ void SelfEncryptor::ReadDataMapChunks(char* data, uint32_t length, uint64_t posi
       }
     }));
   }
-    // thread barrier emulation
-    for (auto& res : fut2)
-      res.get();
+  // thread barrier emulation
+  for (auto& res : fut2)
+    res.get();
 }
 
 void SelfEncryptor::ReadInProcessData(char* data, uint32_t length, uint64_t position) {
@@ -1213,7 +1217,7 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
     buffer_.Delete(data_map_.chunks[chunk_num].hash);
   } catch (std::exception& e) {
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    throw(e); 
+    throw(e);
   }
 }
 
