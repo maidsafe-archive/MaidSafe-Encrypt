@@ -115,6 +115,8 @@ TEST(CacheTest, BEH_PutOutOfSequence) {
   EXPECT_NE(v, answer1);
   EXPECT_EQ(v, answer2);
   EXPECT_EQ(v[10], answer1[0]);
+  cache.Put(v, v.size());
+  cache.Put(v, v.size() * 2);
 }
 
 

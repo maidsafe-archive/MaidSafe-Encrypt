@@ -27,7 +27,7 @@ namespace maidsafe {
 namespace encrypt {
 
 
-Cache::Cache(uint32_t max_size) : cache_(), max_size_(max_size), start_(0) {}
+Cache::Cache(uint32_t max_size) : cache_(), max_size_(max_size), cache_start_position_(0) {}
 
 
 void Cache::Put(std::vector<char> data, uint64_t position) {
@@ -35,13 +35,13 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
   if (data.empty() || (max_size_ == 0))
     return;
 
-  if (position < start_ || (position > (start_ + cache_.size()))) {
+  if (position < cache_start_position_ || (position > (cache_start_position_ + cache_.size()))) {
     cache_.clear();
-    start_ = position;
+    cache_start_position_ = position;
     cache_ = std::move(data);
   } else {
     // assume position > start
-    auto offset(position - start_);
+    auto offset(position - cache_start_position_);
     auto data_size = data.size();
     cache_.reserve(cache_.size() + data_size);
     // Insert data to offset
@@ -50,12 +50,12 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
     if (cache_.size() > data.size())
     cache_.erase(
         std::begin(cache_) + offset + data_size,
-        std::begin(cache_) + (2 * data_size) - offset);
+       std::begin(cache_) + std::min(offset + (2 * data_size), cache_.size()));
   }
   // grown too large, split in two (from the beginning)
   if (cache_.size() > max_size_) {
     cache_.erase(std::begin(cache_), std::begin(cache_) + (max_size_ / 2));
-    start_ += (max_size_ / 2);
+    cache_start_position_ += (max_size_ / 2);
   }
 }
 
@@ -64,10 +64,10 @@ bool Cache::Get(std::vector<char>& data, uint32_t length, uint64_t file_position
   if (cache_.empty())
     return false;
 
-  if (file_position > start_ + cache_.size() || file_position < start_)
+  if (file_position > cache_start_position_ + cache_.size() || file_position < cache_start_position_)
     return false;
 
-  auto offset(file_position - start_);
+  auto offset(file_position - cache_start_position_);
   if (offset + length > cache_.size())
     return false;
 
