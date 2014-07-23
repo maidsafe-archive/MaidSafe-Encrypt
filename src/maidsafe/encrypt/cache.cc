@@ -30,7 +30,7 @@ namespace encrypt {
 Cache::Cache(uint32_t max_size) : cache_(), max_size_(max_size), cache_start_position_(0) {}
 
 
-void Cache::Put(std::vector<char> data, uint64_t position) {
+void Cache::Put(std::vector<byte> data, uint64_t position) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (data.empty() || (max_size_ == 0))
     return;
@@ -59,7 +59,7 @@ void Cache::Put(std::vector<char> data, uint64_t position) {
   }
 }
 
-bool Cache::Get(std::vector<char>& data, uint32_t length, uint64_t file_position) const {
+bool Cache::Get(std::vector<byte>& data, uint32_t length, uint64_t file_position) const {
   std::lock_guard<std::mutex> lock(mutex_);
   if (cache_.empty())
     return false;

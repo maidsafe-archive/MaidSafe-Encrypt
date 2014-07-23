@@ -49,7 +49,7 @@ with that in mind. As is this cache seems to provide the functionality we requir
 namespace maidsafe {
 
 namespace encrypt {
-
+using byte = unsigned char;
 class Cache {
  public:
   explicit Cache(uint32_t max_size = kMaxChunkSize * 8);
@@ -57,12 +57,12 @@ class Cache {
   Cache(const Cache& other) = delete;
   Cache(const Cache&& other) = delete;
   Cache operator=(Cache other) = delete;
-  void Put(std::vector<char> data, uint64_t file_position);
-  bool Get(std::vector<char>& data, uint32_t length, uint64_t file_position) const;
+  void Put(std::vector<byte> data, uint64_t file_position);
+  bool Get(std::vector<byte>& data, uint32_t length, uint64_t file_position) const;
 
  private:
   mutable std::mutex mutex_;
-  std::vector<char> cache_;
+  std::vector<byte> cache_;
   uint32_t max_size_;
   uint64_t cache_start_position_;
 };

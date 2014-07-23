@@ -20,24 +20,15 @@
 #define MAIDSAFE_ENCRYPT_CONFIG_H_
 
 #include <cstdint>
-
+#include <vector>
 namespace maidsafe {
 
 namespace encrypt {
 
-const uint32_t kMinChunkSize(1024);             // bytes
+const uint32_t kMinChunkSize(1024); 
+using byte = unsigned char;
+using ByteVector = std::vector<byte>;
 
-enum ReturnCode {
-  kSuccess = 0,
-  kInvalidChunkIndex = -200001,
-  kFailedToStoreChunk = -200002,
-  kMissingChunk = -200003,
-  kEncryptionException = -200004,
-  kDecryptionException = -200005,
-  kInvalidPosition = -200006,
-  kSequencerException = -200007,
-  kSequencerAddError = -200008
-};
 
 }  // namespace encrypt
 

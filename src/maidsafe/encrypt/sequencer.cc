@@ -16,7 +16,6 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "boost/assert.hpp"
 #include "maidsafe/common/log.h"
 #include "maidsafe/encrypt/sequencer.h"
 #include "maidsafe/encrypt/config.h"
@@ -27,151 +26,120 @@ namespace encrypt {
 
 namespace {
 const SequenceBlock kInvalidSeqBlock(std::make_pair(std::numeric_limits<uint64_t>::max(),
-                                                    ByteArray()));
+                                                    ByteVector()));
 }  // unnamed namespace
 
-int Sequencer::Add(const char* data, uint32_t length, uint64_t position) {
-  try {
-    // If the insertion point is past the current end, just insert a new element
-    if (blocks_.empty() ||
-        position > (*blocks_.rbegin()).first + Size((*blocks_.rbegin()).second)) {
-      auto result = blocks_.insert(std::make_pair(position, GetNewByteArray(length)));
-      assert(result.second);
-      if (MemCopy((*(result.first)).second, 0, data, length) != length) {
-        LOG(kError) << "Error adding " << length << " bytes to sequencer at " << position;
-        return kSequencerAddError;
-      }
-      return kSuccess;
-    }
-
-    auto lower_itr = blocks_.lower_bound(position);
-    auto upper_itr = blocks_.upper_bound(position + length);
-
-    // Check to see if new data spans part of, or joins onto, data of element
-    // preceding lower_itr
-    if (lower_itr == blocks_.end() ||
-        (lower_itr != blocks_.begin() && (*lower_itr).first != position)) {
-      --lower_itr;
-      if ((*lower_itr).first + Size((*lower_itr).second) < position)
-        ++lower_itr;
-    }
-
-    uint64_t lower_start_position((*lower_itr).first);
-    uint64_t new_start_position(position);
-    uint32_t pre_overlap_size(0);
-    bool reduced_upper(false);
-
-    if (position > lower_start_position) {
-      assert(position - lower_start_position < std::numeric_limits<uint32_t>::max());
-      pre_overlap_size = static_cast<uint32_t>(position - lower_start_position);
-      new_start_position = lower_start_position;
-    }
-
-    // Check to see if new data spans part of, or joins onto, data of element
-    // preceding upper_itr
-    if (upper_itr != blocks_.begin()) {
-      --upper_itr;
-      reduced_upper = true;
-    }
-    uint64_t upper_start_position((*upper_itr).first);
-    uint32_t upper_size(Size((*upper_itr).second));
-
-    uint64_t post_overlap_posn(position + length);
-    uint32_t post_overlap_size(0);
-
-    if ((position + length) < (upper_start_position + upper_size) && reduced_upper) {
-      assert(upper_size > post_overlap_posn - upper_start_position);
-      assert(upper_size - (post_overlap_posn - upper_start_position) <
-                   std::numeric_limits<uint32_t>::max());
-      post_overlap_size =
-          upper_size - static_cast<uint32_t>(post_overlap_posn - upper_start_position);
-    }
-
-    ByteArray new_entry = GetNewByteArray(pre_overlap_size + length + post_overlap_size);
-
-    if (MemCopy(new_entry, 0, (*lower_itr).second.get(), pre_overlap_size) != pre_overlap_size) {
-      LOG(kError) << "Error adding pre-overlap";
-      return kSequencerAddError;
-    }
-
-    if (MemCopy(new_entry, pre_overlap_size, data, length) != length) {
-      LOG(kError) << "Error adding mid-overlap";
-      return kSequencerAddError;
-    }
-
-    if (MemCopy(new_entry, pre_overlap_size + length,
-                (*upper_itr).second.get() + (post_overlap_posn - upper_start_position),
-                post_overlap_size) != post_overlap_size) {
-      LOG(kError) << "Error adding post-overlap";
-      return kSequencerAddError;
-    }
-
-    if (reduced_upper)
-      ++upper_itr;
-    blocks_.erase(lower_itr, upper_itr);
-    auto result = blocks_.insert(std::make_pair(new_start_position, new_entry));
+void Sequencer::Add(ByteVector data, uint64_t position) {
+  if(data.size() == kMaxChunkSize && position % kMaxChunkSize == 0)
+    has_chunks_.insert(position / kMaxChunkSize);  
+  // If the insertion point is past the current end, just insert a new element
+  if (blocks_.empty() || position > (blocks_.rbegin()->first + blocks_.begin()->second.size())) {
+    auto result = blocks_.insert(std::make_pair(position, std::move(data)));
     assert(result.second);
-    static_cast<void>(result);
+    return;
   }
-  catch (const std::exception& e) {
-    // TODO(DI) here we need to catch the error - likely out of mem.  We
-    // should then set up a flilestream in boost::tmp_dir, empty sequencer and
-    // this write data to the file and set a flag to say we have written a
-    // fstream.  All further writes to fstream.  On destruct - write all data
-    // from fstream to SE::write method. This will encrypt whole file.  Write
-    // 0s where there are 0s in the fstream.  Read from fstream as well as
-    // write, maybe make protected getter/setter and we can run all tests
-    // against the fstream as well.  Else fail ???
-    LOG(kError) << e.what();
-    return kSequencerException;
+
+  auto lower_itr = blocks_.lower_bound(position);
+  auto upper_itr = blocks_.upper_bound(position + data.size());
+
+  // Check to see if new data spans part of, or joins onto, data of element
+  // preceding lower_itr
+  if (lower_itr == blocks_.end() ||
+      (lower_itr != blocks_.begin() && (*lower_itr).first != position)) {
+    --lower_itr;
+    if ((lower_itr->first + lower_itr->second.size()) < position)
+      ++lower_itr;
   }
-  return kSuccess;
+
+  uint64_t lower_start_position((*lower_itr).first);
+  uint64_t new_start_position(position);
+  uint32_t pre_overlap_size(0);
+  bool reduced_upper(false);
+
+  if (position > lower_start_position) {
+    assert(position - lower_start_position < std::numeric_limits<uint32_t>::max());
+    pre_overlap_size = static_cast<uint32_t>(position - lower_start_position);
+    new_start_position = lower_start_position;
+  }
+
+  // Check to see if new data spans part of, or joins onto, data of element
+  // preceding upper_itr
+  if (upper_itr != blocks_.begin()) {
+    --upper_itr;
+    reduced_upper = true;
+  }
+  uint64_t upper_start_position((*upper_itr).first);
+  uint32_t upper_size(upper_itr->second.size());
+
+  uint64_t post_overlap_posn(position + data.size());
+  uint32_t post_overlap_size(0);
+
+  if ((position + data.size()) < (upper_start_position + upper_size) && reduced_upper) {
+    assert(upper_size > post_overlap_posn - upper_start_position);
+    assert(upper_size - (post_overlap_posn - upper_start_position) <
+           std::numeric_limits<uint32_t>::max());
+    post_overlap_size =
+        upper_size - static_cast<uint32_t>(post_overlap_posn - upper_start_position);
+  }
+
+  ByteVector new_entry(pre_overlap_size + data.size() + post_overlap_size);
+
+  new_entry.insert(std::begin(new_entry), std::begin(lower_itr->second),
+                   std::begin(lower_itr->second) + pre_overlap_size);
+  new_entry.insert(std::begin(new_entry) + pre_overlap_size, std::begin(data), std::end(data));
+  new_entry.insert(std::begin(new_entry) + pre_overlap_size + data.size(),
+                   std::begin(lower_itr->second),
+                   std::begin(lower_itr->second) + post_overlap_size);
+
+  if (reduced_upper)
+    ++upper_itr;
+  blocks_.erase(lower_itr, upper_itr);
+  auto result = blocks_.insert(std::make_pair(new_start_position, new_entry));
+  assert(result.second);
+  static_cast<void>(result);
 }
 
-ByteArray Sequencer::Get(uint64_t position) {
-  auto itr(blocks_.find(position));
-  if (itr == blocks_.end())
-    return ByteArray();
-  ByteArray result((*itr).second);
-  blocks_.erase(itr);
-  return result;
-}
+ByteVector Sequencer::GetChunk(uint32_t chunk_number) {
+  ByteVector data(kMaxChunkSize);
+  auto chunk_start_position((chunk_number - 1) * kMaxChunkSize);
+  auto remainder(kMaxChunkSize);
 
-SequenceBlock Sequencer::GetFirst() {
-  if (blocks_.empty())
-    return kInvalidSeqBlock;
-  auto result(*blocks_.begin());
-  blocks_.erase(blocks_.begin());
-  return result;
-}
+  auto itr = std::find_if(std::begin(blocks_), std::end(blocks_), [=](const SequenceBlock& pos) {
+    return (pos.first + pos.second.size() >= chunk_start_position);
+  });
 
-SequenceBlock Sequencer::PeekBeyond(uint64_t position) const {
-  auto itr(blocks_.lower_bound(position));
-  return itr == blocks_.end() ? kInvalidSeqBlock : *itr;
-}
+  assert(itr == std::end(blocks_));
 
-SequenceBlock Sequencer::Peek(uint32_t length, uint64_t position) const {
-  if (blocks_.empty())
-    return kInvalidSeqBlock;
-
-  auto itr(blocks_.lower_bound(position));
-  if (itr != blocks_.end() && (*itr).first == position)
-    return *itr;
-
-  if (itr == blocks_.end() || itr != blocks_.begin())
-    --itr;
-
-  if ((*itr).first < position) {
-    if ((*itr).first + Size((*itr).second) > position)
-      return *itr;
+  while (remainder > 0 || itr->first > chunk_number * kMaxChunkSize) {
+    auto offset(itr->first + itr->second.size() - chunk_start_position);
+    auto copy_size(
+        std::min(static_cast<size_t>(kMaxChunkSize), itr->first + itr->second.size() - offset));
+    std::copy_n(std::begin(itr->second) + offset, copy_size, std::begin(data));
+    itr->second.erase(std::begin(itr->second) + offset, std::begin(itr->second) + copy_size);
+    remainder -= copy_size;
+    if (itr->second.size() == 0)
+      blocks_.erase(itr++);
     else
       ++itr;
   }
+  has_chunks_.erase(chunk_number);
+  assert(data.size() != kMaxChunkSize);
+  return data;
+}
 
-  if (itr == blocks_.end())
-    return kInvalidSeqBlock;
+ByteVector Sequencer::Read(uint32_t length, uint64_t position) {
+  auto itr = std::find_if(std::begin(blocks_), std::end(blocks_), [=](const SequenceBlock& pos) {
+    return (pos.first + pos.second.size() >= position);
+  });
 
-  return ((*itr).first < length + position) ? *itr : kInvalidSeqBlock;
+  auto offset(itr->first + itr->second.size() - position);
+  ByteVector ret_vec;
+  if (itr == std::end(blocks_) || (itr->first + itr->second.size()) < length)
+    return ret_vec;
+  ret_vec.resize(length);
+  std::copy(std::begin(itr->second) + offset, std::begin(itr->second) + offset + length,
+            std::begin(ret_vec));
+  return ret_vec;
 }
 
 void Sequencer::Truncate(uint64_t position) {
@@ -182,28 +150,38 @@ void Sequencer::Truncate(uint64_t position) {
   // after position
   auto lower_itr(blocks_.lower_bound(position));
   if (lower_itr == blocks_.end() ||
-      (lower_itr != blocks_.begin() && (*lower_itr).first != position)) {
+      (lower_itr != blocks_.begin() && lower_itr->first != position)) {
     --lower_itr;
   }
   if ((*lower_itr).first < position) {
     // If it spans, truncate the block
-    if ((*lower_itr).first + Size((*lower_itr).second) > position) {
+    if ((lower_itr->first + lower_itr->second.size()) > position) {
       uint32_t reduced_size =
-          static_cast<uint32_t>((*lower_itr).first + Size((*lower_itr).second) - position);
-      ByteArray temp(GetNewByteArray(reduced_size));
-#ifndef NDEBUG
-      uint32_t copied =
-#endif
-          MemCopy(temp, 0, (*lower_itr).second.get(), reduced_size);
-      assert(reduced_size == copied);
+          static_cast<uint32_t>(lower_itr->first + lower_itr->second.size() - position);
+      ByteVector temp(reduced_size);
+      std::copy(std::begin(temp), std::begin(lower_itr->second),
+                std::begin(lower_itr->second) + reduced_size);
       (*lower_itr).second = temp;
     }
     // Move to first block past position
     ++lower_itr;
   }
-
   blocks_.erase(lower_itr, blocks_.end());
 }
+
+uint32_t Sequencer::Size() {
+  auto size(0);
+  for (const auto& res : blocks_) {
+    size += res.second.size();
+  }
+  return size;
+}
+
+bool Sequencer::HasChunk(uint32_t chunk) {
+  auto itr = has_chunks_.find(chunk);
+  return itr != std::end(has_chunks_);
+}
+
 
 }  // namespace encrypt
 

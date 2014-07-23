@@ -24,13 +24,15 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <array>
 #include <vector>
-
+#include <set>
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/data_buffer.h"
 
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/config.h"
 
 namespace maidsafe {
 
@@ -43,7 +45,7 @@ enum class EncryptionAlgorithm : uint32_t {
 
 extern const EncryptionAlgorithm kSelfEncryptionVersion;
 extern const EncryptionAlgorithm kDataMapEncryptionVersion;
-
+static const uint32_t kQueueSize(kMaxChunkSize * 16);
 class Sequencer;
 class Cache; 
 
@@ -77,89 +79,37 @@ class SelfEncryptor {
   const DataMap& original_data_map() const { return kOriginalDataMap_; }
 
  private:
-  // If prepared_for_writing_ is not already true, this either reads the first 2
-  // chunks into their appropriate buffers or reads the content field of
-  // data_map_ into chunk0_raw_.  This guarantees that if data_map_ had
-  // exactly 3 chunks before (the only way chunks could be non-default-sized),
-  // it will be empty after.  Chunks read in from data_map_ are deleted from
-  // chunk_store_.  The main_encrypt_queue_ is set to start at "position" if it
-  // is beyond the end of the first 2 chunks.
-  void PrepareToWrite(uint32_t length, uint64_t position);
-  // If file < * Chunks then its all in the read_cache_
-  bool SmallFile();
-  // is read cache full
-  bool CacheFull();
-  // Copies any relevant data to read_cache_.
-  void PutToReadCache(const char* data, uint32_t length, uint64_t position);
-  // Copies any relevant data to read_buffer_.
-  void PutToReadBuffer(const char* data, uint32_t length, uint64_t position);
-  // Copies data to chunk0_raw_ and/or chunk1_raw_.  Returns number of bytes
-  // copied.  Updates length and position if data is copied.
-  uint32_t PutToInitialChunks(const char* data, uint32_t* length, uint64_t* position);
-  // If data for writing overlaps or joins on to the end of main_encrypt_queue_,
-  // this returns true and sets the offsets to the required start positions of
-  // the data and the main_encrypt_queue_.
-  bool GetDataOffsetForEnqueuing(uint32_t length, uint64_t position, uint32_t* data_offset,
-                                 uint32_t* queue_offset);
-  // Copies data into main_encrypt_queue_.  Any elements of data that precede
-  // the start of main_encrypt_queue_ are ignored.  If the main_encrypt_queue_
-  // becomes full during the process, it is encrpyted and reset.  This repeats
-  // until all of the remaining data is copied.  If any of the data falls into
-  // chunk 0 or 1, it is copied to those buffer(s) instead.  In this case, these
-  // chunk buffers are treated as part of the main_encrypt_queue_ as far as
-  // updating position pointers is concerned.
-  void PutToEncryptQueue(const char* data, uint32_t length, uint32_t data_offset,
-                         uint32_t queue_offset);
-  // Any data for writing beyond chunks 0 and 1 and which precedes
-  // main_encrypt_queue_, is added to the sequencer.  So is any data which
-  // follows but doesn't adjoin main_encrypt_queue_.  For such a case, this
-  // returns true and adjusts length to the required amount of data to be
-  // copied.
-  bool GetLengthForSequencer(uint64_t position, uint32_t* length);
+  void PopulateMainQueue();
+  // If file can fit in the main_encrypt_queue_ then its all in there
+  bool SmallFile(uint32_t length, uint64_t position);
+  // Add any write to sequencer. Writes > main_encrypt_queue_ go here
+  // This call will handle sequencer_ resize if required
+  // if we are adding to a new chunk location the sequencer will 
+  // let us know to retrieve the old data and this call will do that
+  // Therefore any chunks > main_encrypt_queue_ are fully contained here
+  void AddToSequencer(ByteVector data, uint64_t position);
   // Retrieves the encrypted chunk from chunk_store_ and decrypts it to "data".
-  void DecryptChunk(uint32_t chunk_num, byte* data);
+  ByteVector DecryptChunk(uint32_t chunk_num);
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
-  // encryption pad.  If writing, and chunk has old_n1_pre_hash and
-  // old_n2_pre_hash fields set, they are reset to NULL.
-  void GetPadIvKey(uint32_t this_chunk_num, std::shared_ptr<byte> key, std::shared_ptr<byte> iv,
-                   std::shared_ptr<byte> pad, bool writing);
-  // Encrypts all but the last chunk in the queue, then moves the last chunk to
-  // the front of the queue.
-  void ProcessMainQueue();
+  // encryption pad. 
+  void GetPadIvKey(uint32_t this_chunk_num, byte* key, byte* iv,
+                   byte* pad);
   // Encrypts the chunk and stores in chunk_store_
   void EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length);
-  // If the calculated pre-hash is different to any existing pre-hash,
-  // modified is set to true.  In this case, chunks n+1 and n+2 have their
-  // old_n1_pre_hash and old_n2_pre_hash fields completed if not already done.
-  void CalculatePreHash(uint32_t chunk_num, const byte* data, uint32_t length, bool* modified);
-  void CalculateSizes(bool force);
-  // Handles reading from populated data_map_ and all the various write buffers.
-  int Transmogrify(char* data, uint32_t length, uint64_t position);
-  void ReadDataMapChunks(char* data, uint32_t length, uint64_t position);
-  void ReadInProcessData(char* data, uint32_t length, uint64_t position);
+  void CalculatePreHash(uint32_t chunk_num, byte* data, uint32_t length);
   bool TruncateUp(uint64_t position);
   bool AppendNulls(uint64_t position);
   bool TruncateDown(uint64_t position);
   void DeleteChunk(uint32_t chunk_num);
 
   DataMap& data_map_;
-  DataMap kOriginalDataMap_;
   std::unique_ptr<Sequencer> sequencer_;
-  const uint32_t kDefaultByteArraySize_;
-  uint64_t file_size_, last_chunk_position_;
-  uint64_t truncated_file_size_;
-  uint32_t normal_chunk_size_;
-  std::shared_ptr<byte> main_encrypt_queue_;
-  uint64_t queue_start_position_;
-  const uint32_t kQueueCapacity_;
-  uint32_t retrievable_from_queue_;
-  std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  DataBuffer<std::string>& buffer_;
-  std::function<NonEmptyString(const std::string&)> get_from_store_;
-  uint64_t current_position_;
   std::unique_ptr<Cache> read_cache_;
-  bool prepared_for_writing_, flushed_;
-  uint64_t last_read_position_;
+  DataBuffer<std::string>& buffer_;
+  ByteVector main_encrypt_queue_;
+  std::function<NonEmptyString(const std::string&)> get_from_store_;
+  std::set<int> chunks_written_to_;
+  uint64_t file_size_, truncated_file_size_;
   mutable std::mutex data_mutex_;
 };
 
