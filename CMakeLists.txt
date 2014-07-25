@@ -79,13 +79,12 @@ target_compile_options(maidsafe_encrypt PRIVATE $<$<BOOL:${OPENMP_FOUND}>:${Open
 # Tests                                                                                            #
 #==================================================================================================#
 if(MaidsafeTesting)
-  ms_add_style_test()
+  ms_add_default_tests()
   ms_add_gtests(TESTencrypt)
   set(Timeout 300)
   ms_update_test_timeout(Timeout)
   set_property(TEST BasicTest.BEH_WriteLongAndShort65536SegmentsReadThenRewrite PROPERTY TIMEOUT ${Timeout})
   set_property(TEST LargeFile/BasicOffsetTest.BEH_EncryptDecrypt/2 PROPERTY TIMEOUT ${Timeout})
-  ms_add_project_experimental()
   ms_test_summary_output()
 endif()
 
