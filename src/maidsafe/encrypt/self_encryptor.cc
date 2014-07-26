@@ -171,12 +171,14 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
                              std::function<NonEmptyString(const std::string&)> get_from_store,
                              int /* num_procs */)
     : data_map_(data_map),
+      kOriginalDataMap_(data_map),
       sequencer_(new Sequencer),
       read_cache_(new Cache(kQueueSize)),
       buffer_(buffer),
       main_encrypt_queue_(),
       get_from_store_(get_from_store),
       chunks_written_to_(),
+      require_calculate_hash_(),
       file_size_(0),
       truncated_file_size_(0),
       data_mutex_() {
@@ -200,51 +202,57 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
   SCOPED_PROFILE
   if (length == 0)
     return true;
-  chunks_written_to_.insert(position / kMaxChunkSize);
   ByteVector to_be_written(data, data + length);  // copy - inefficient
-  if ((length + position) <= kQueueSize) {        // we can fit this all in one container
-    if (main_encrypt_queue_.size() < position + length)
-      main_encrypt_queue_.resize(position + length);
-    std::copy(std::begin(to_be_written), std::end(to_be_written),
-              std::begin(main_encrypt_queue_) + position);
-    return true;
-  } else {
-    AddToSequencer(to_be_written, position);
-    read_cache_->Put(to_be_written, position);
+  read_cache_->Put(to_be_written, position);
+
+  // if ((position) < kQueueSize) {  // we can sone of this main_encrypt_queue_
+  //   auto this_length(std::min(position + length, static_cast<uint64_t>(kQueueSize)));
+  //   if (main_encrypt_queue_.size() < this_length)
+  //     main_encrypt_queue_.resize(position + this_length);
+  //   std::copy(std::begin(to_be_written), std::begin(to_be_written) + this_length,
+  //             std::begin(main_encrypt_queue_) + position);
+  //   if (this_length == length)
+  //     return true;
+  //   else {
+  //     to_be_written.erase(std::begin(to_be_written), std::begin(to_be_written) + this_length);
+  //     position += this_length;
+  //   }
+  // }
+  PrepareWindow(length, position);
+  sequencer_->Add(to_be_written, position);
+  file_size_ = std::max(file_size_, length + position);
+  return true;  //TODO(dirvine) did we actually write ??
+}
+
+void SelfEncryptor::PrepareWindow(uint32_t length, uint64_t position) {
+  auto first_chunk(position / kMaxChunkSize);
+  auto last_chunk(first_chunk + (length / kMaxChunkSize));
+  if (position % kMaxChunkSize != 0)
+    ++last_chunk;
+  for (; first_chunk <= last_chunk; ++first_chunk) {
+    if (!sequencer_->HasChunk(first_chunk) && data_map_.chunks.size() >= first_chunk)
+      sequencer_->Add(DecryptChunk(first_chunk), first_chunk * kMaxChunkSize);
+    chunks_written_to_.insert(first_chunk);
+    require_calculate_hash_.insert(first_chunk);
   }
-  return true;
+  require_calculate_hash_.insert(++last_chunk);
+  require_calculate_hash_.insert(++last_chunk);
 }
 
 void SelfEncryptor::PopulateMainQueue() {
   SCOPED_PROFILE
-  // dump as much of the file into the main_encrypt_queue_ as possible
+  // dump at least the first three chunks in sequencer
   uint64_t pos(0);
   if (!data_map_.chunks.empty()) {
     assert(data_map_.chunks.size() >= 3);
-    ByteVector temp(kMaxChunkSize);
-    uint32_t chunks_to_decrypt(
-        std::min((kQueueSize / kMaxChunkSize), static_cast<uint32_t>(data_map_.chunks.size())));
-    for (uint32_t i(0); i != chunks_to_decrypt; ++i) {
+    for (auto i(0); i != 3; ++i) {
       ByteVector temp(DecryptChunk(i));
-      std::copy(std::begin(temp), std::end(temp), std::begin(main_encrypt_queue_) + pos);
-      pos += temp.size();
+      sequencer_->Add(DecryptChunk(i), pos);
+      pos += data_map_.chunks.at(i).size;
     }
-    data_map_.chunks[0].size = 0;
-    data_map_.chunks[1].size = 0;
   } else {
-    std::copy(std::begin(data_map_.content), std::end(data_map_.content),
-              std::begin(main_encrypt_queue_));
+      sequencer_->Add(data_map_.content, pos);
   }
-}
-
-void SelfEncryptor::AddToSequencer(ByteVector data, uint64_t position) {
-  auto chunk_number = (position / kMaxChunkSize);
-  // TODO (dirvine) Handle exceptions by clear read_cache_ and reduce sequencer size
-  // we then need to set up a check to not get to this size again so
-  // check sequencer_.size and clear it of some data
-  if (!sequencer_->HasChunk(chunk_number) && data_map_.chunks.size() >= chunk_number)
-    sequencer_->Add(DecryptChunk(chunk_number), position);
-  sequencer_->Add(data, position);
 }
 
 ByteVector SelfEncryptor::DecryptChunk(uint32_t chunk_num) {
@@ -256,43 +264,39 @@ ByteVector SelfEncryptor::DecryptChunk(uint32_t chunk_num) {
 
   uint32_t length = data_map_.chunks[chunk_num].size;
   ByteVector data(length);
-  byte* pad(new byte[kPadSize]);
-  byte* key(new byte[crypto::AES256_KeySize]);
-  byte* iv(new byte[crypto::AES256_IVSize]);
-  on_scope_exit([=] {
-    delete[] key;
-    delete[] iv;
-    delete[] pad;
-  });
+  ByteVector pad(kPadSize);
+  ByteVector key(crypto::AES256_KeySize);
+  ByteVector iv(crypto::AES256_IVSize);
   GetPadIvKey(chunk_num, key, iv, pad);
   NonEmptyString content;
   try {
-    content = get_from_store_(std::string(std::begin(data_map_.chunks[chunk_num].hash), std::end(data_map_.chunks[chunk_num].hash)));
+    content = get_from_store_(std::string(std::begin(data_map_.chunks[chunk_num].hash),
+                                          std::end(data_map_.chunks[chunk_num].hash)));
   } catch (std::exception& e) {
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
     throw(e);
   }
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key, crypto::AES256_KeySize, iv);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(&key.data()[0], crypto::AES256_KeySize, &iv.data()[0]);
   CryptoPP::StringSource filter(
       content.string(), true,
       new XORFilter(new CryptoPP::StreamTransformationFilter(
                         decryptor, new CryptoPP::Gunzip(new CryptoPP::MessageQueue)),
-                    pad));
+                    &pad.data()[0]));
   filter.Get(&data.data()[0], length);
   return data;
 }
 
-void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, byte* key, byte* iv, byte* pad) {
+void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVector& iv, ByteVector& pad) {
   SCOPED_PROFILE
   uint32_t num_chunks = static_cast<uint32_t>(data_map_.chunks.size());
   uint32_t n_1_chunk = (this_chunk_num + num_chunks - 1) % num_chunks;
   uint32_t n_2_chunk = (this_chunk_num + num_chunks - 2) % num_chunks;
 
-  const byte* n_1_pre_hash = &data_map_.chunks[n_1_chunk].pre_hash.data()[0];
-  const byte* n_2_pre_hash = &data_map_.chunks[n_2_chunk].pre_hash.data()[0];
+  const ByteVector n_1_pre_hash = data_map_.chunks[n_1_chunk].pre_hash;
+  const ByteVector n_2_pre_hash = data_map_.chunks[n_2_chunk].pre_hash;
 
 
-  memcpy(key, n_2_pre_hash, crypto::AES256_KeySize);
+  std::copy_n(std::begin(n_2_pre_hash), crypto::AES256_KeySize, std::begin(key));
   memcpy(iv, n_2_pre_hash + crypto::AES256_KeySize, crypto::AES256_IVSize);
   memcpy(pad, n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
   memcpy(pad + crypto::SHA512::DIGESTSIZE, &data_map_.chunks[this_chunk_num].pre_hash[0],
@@ -335,9 +339,13 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length
 
   data_map_.chunks[chunk_num].storage_state = ChunkDetails::kPending;
   try {
-    buffer_.Store(std::string(std::begin(data_map_.chunks[chunk_num].hash), std::begin(data_map_.chunks[chunk_num].hash)) , NonEmptyString(chunk_content));
+    buffer_.Store(std::string(std::begin(data_map_.chunks[chunk_num].hash),
+                              std::begin(data_map_.chunks[chunk_num].hash)),
+                  NonEmptyString(chunk_content));
   } catch (std::exception& e) {
-    LOG(kError) << e.what() << "Could not store " << Base64Substr(std::string(std::begin(data_map_.chunks[chunk_num].hash), std::begin(data_map_.chunks[chunk_num].hash)));
+    LOG(kError) << e.what() << "Could not store "
+                << Base64Substr(std::string(std::begin(data_map_.chunks[chunk_num].hash),
+                                            std::begin(data_map_.chunks[chunk_num].hash)));
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
     throw(e);
   }
@@ -354,24 +362,22 @@ void SelfEncryptor::CalculatePreHash(uint32_t chunk_num, byte* data, uint32_t le
   SCOPED_PROFILE
 
   std::lock_guard<std::mutex> guard(data_mutex_);
-  CryptoPP::SHA512().CalculateDigest(&data_map_.chunks[chunk_num].pre_hash.data()[0], data,
-                                     length);
+  CryptoPP::SHA512().CalculateDigest(&data_map_.chunks[chunk_num].pre_hash.data()[0], data, length);
 }
 
 bool SelfEncryptor::Flush() {
   SCOPED_PROFILE
-TO BE DONE
-  if (main_encrypt_queue_.size() < 3 * kMinChunkSize) {
+  TO BE DONE if (main_encrypt_queue_.size() < 3 * kMinChunkSize) {
     data_map_.content.clear();
     std::copy(std::begin(main_encrypt_queue_), std::begin(main_encrypt_queue_) + file_size_,
               std::begin(data_map_.content));
     data_map_.chunks.clear();
     return true;
-  } else {
+  }
+  else {
     data_map_.content.clear();
   }
-From here just rewrite the chunks written to! (includes new data)
-  return true;
+  From here just rewrite the chunks written to !(includes new data) return true;
 }
 
 bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
@@ -388,16 +394,14 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   }
   uint32_t copied(0);
   if ((length + position) <= kQueueSize && main_encrypt_queue_.size() <= (length + position)) {
-      copied = std::min(length+position, main_encrypt_queue_.size());
-      memcpy(data, &main_encrypt_queue_.data()[position], copied);
-      if (copied == length)
-        return true;
+    copied = std::min(length + position, main_encrypt_queue_.size());
+    memcpy(data, &main_encrypt_queue_.data()[position], copied);
+    if (copied == length)
+      return true;
   }
-  Try sequencer 
-    get chunk / decrypt
-    add to read_cache and reread read cache
+  Try sequencer get chunk / decrypt add to read_cache and reread read cache
 
-  return true;
+      return true;
 }
 
 
@@ -415,31 +419,31 @@ bool SelfEncryptor::TruncateDown(uint64_t position) {
   SCOPED_PROFILE
   // truncate queue, sequencer, and chunks 0 & 1.
 
-  if(position < main_encrypt_queue_.size()) {
-  main_encrypt_queue_.resize(position);
-  sequencer_->Clear();
+  if (position < main_encrypt_queue_.size()) {
+    main_encrypt_queue_.resize(position);
+    sequencer_->Clear();
   }
   sequencer_->Truncate(position);
-remove all chunks_written_to above this point
-  // TODO(Fraser#5#): 2011-10-18 - Confirm these memset's are really required
-  // if (position < kMaxChunkSize) {
-  //   uint32_t overwite_size(kMaxChunkSize - static_cast<uint32_t>(position));
-  //   uint32_t overwrite_position(static_cast<uint32_t>(position));
-  //   memset(chunk0_raw_ + overwrite_position, 0, overwite_size);
-  //   memset(chunk1_raw_, 0, kMaxChunkSize);
-  //   if (data_map_.chunks.size() > 1) {
-  //     data_map_.chunks[0].pre_hash_state = ChunkDetails::kOutdated;
-  //     data_map_.chunks[1].pre_hash_state = ChunkDetails::kOutdated;
-  //   }
-  // } else if (position < 2 * kMaxChunkSize) {
-  //   uint32_t overwite_size((2 * kMaxChunkSize) - static_cast<uint32_t>(position));
-  //   uint32_t overwrite_position(static_cast<uint32_t>(position) - kMaxChunkSize);
-  //   memset(chunk1_raw_ + overwrite_position, 0, overwite_size);
-  //   if (data_map_.chunks.size() > 1)
-  //     data_map_.chunks[1].pre_hash_state = ChunkDetails::kOutdated;
-  // }
-  //
-  file_size_ = position;
+  remove all chunks_written_to above this point
+      // TODO(Fraser#5#): 2011-10-18 - Confirm these memset's are really required
+      // if (position < kMaxChunkSize) {
+      //   uint32_t overwite_size(kMaxChunkSize - static_cast<uint32_t>(position));
+      //   uint32_t overwrite_position(static_cast<uint32_t>(position));
+      //   memset(chunk0_raw_ + overwrite_position, 0, overwite_size);
+      //   memset(chunk1_raw_, 0, kMaxChunkSize);
+      //   if (data_map_.chunks.size() > 1) {
+      //     data_map_.chunks[0].pre_hash_state = ChunkDetails::kOutdated;
+      //     data_map_.chunks[1].pre_hash_state = ChunkDetails::kOutdated;
+      //   }
+      // } else if (position < 2 * kMaxChunkSize) {
+      //   uint32_t overwite_size((2 * kMaxChunkSize) - static_cast<uint32_t>(position));
+      //   uint32_t overwrite_position(static_cast<uint32_t>(position) - kMaxChunkSize);
+      //   memset(chunk1_raw_ + overwrite_position, 0, overwite_size);
+      //   if (data_map_.chunks.size() > 1)
+      //     data_map_.chunks[1].pre_hash_state = ChunkDetails::kOutdated;
+      // }
+      //
+      file_size_ = position;
   CalculateSizes(true);
   return true;
 }

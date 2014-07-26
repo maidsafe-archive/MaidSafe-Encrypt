@@ -80,20 +80,17 @@ class SelfEncryptor {
 
  private:
   void PopulateMainQueue();
-  // If file can fit in the main_encrypt_queue_ then its all in there
-  bool SmallFile(uint32_t length, uint64_t position);
   // Add any write to sequencer. Writes > main_encrypt_queue_ go here
   // This call will handle sequencer_ resize if required
   // if we are adding to a new chunk location the sequencer will 
   // let us know to retrieve the old data and this call will do that
   // Therefore any chunks > main_encrypt_queue_ are fully contained here
-  void AddToSequencer(ByteVector data, uint64_t position);
+  void PrepareWindow(uint32_t length, uint64_t position);
   // Retrieves the encrypted chunk from chunk_store_ and decrypts it to "data".
   ByteVector DecryptChunk(uint32_t chunk_num);
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
   // encryption pad. 
-  void GetPadIvKey(uint32_t this_chunk_num, byte* key, byte* iv,
-                   byte* pad);
+  void GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVector& iv, ByteVector& pad);
   // Encrypts the chunk and stores in chunk_store_
   void EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length);
   void CalculatePreHash(uint32_t chunk_num, byte* data, uint32_t length);
@@ -102,13 +99,13 @@ class SelfEncryptor {
   bool TruncateDown(uint64_t position);
   void DeleteChunk(uint32_t chunk_num);
 
-  DataMap& data_map_;
+  DataMap& data_map_, kOriginalDataMap_;
   std::unique_ptr<Sequencer> sequencer_;
   std::unique_ptr<Cache> read_cache_;
   DataBuffer<std::string>& buffer_;
   ByteVector main_encrypt_queue_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
-  std::set<int> chunks_written_to_;
+  std::set<int> chunks_written_to_, require_calculate_hash_;
   uint64_t file_size_, truncated_file_size_;
   mutable std::mutex data_mutex_;
 };

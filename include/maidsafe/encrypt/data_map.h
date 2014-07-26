@@ -68,7 +68,7 @@ struct DataMap {
 
   EncryptionAlgorithm self_encryption_version;
   std::vector<ChunkDetails> chunks;
-  std::string content;  // Whole data item, if small enough
+  ByteVector content;  // Whole data item, if small enough
 };
 
 bool operator==(const DataMap& lhs, const DataMap& rhs);
