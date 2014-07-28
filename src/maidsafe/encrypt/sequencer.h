@@ -32,6 +32,8 @@ using byte = unsigned char;
 typedef std::map<uint64_t, ByteVector> SequenceBlockMap;
 typedef SequenceBlockMap::value_type SequenceBlock;
 
+// This object treats all chunks as of size kMaxChunkSize
+
 class Sequencer {
  public:
   Sequencer() : blocks_() {}
@@ -48,16 +50,6 @@ class Sequencer {
   // Returns copy of data
   // no data exists at position, it returns an empty ByteVector.
   ByteVector Read(uint32_t length, uint64_t position);
-  // // Returns and removes the first block of sequenced data in the map.  If the
-  // // map is empty, it returns kInvalidSeqBlock.
-  // SequenceBlock GetFirst();
-  // // Returns without removing the first block of sequenced data in the map which
-  // // compares >= position.  If this is the map end, it returns kInvalidSeqBlock.
-  // SequenceBlock PeekBeyond(uint64_t position) const;
-  // // Returns without removing the first block of sequenced data in the map which
-  // // has data contained within area defined by position and length.  If this is
-  // // the map end, it returns kInvalidSeqBlock.
-  // SequenceBlock Peek(uint32_t length, uint64_t position) const;
   // Removes all blocks after position, and reduces any block spanning position
   // to terminate at position.
   void Truncate(uint64_t position);

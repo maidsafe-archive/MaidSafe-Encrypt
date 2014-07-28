@@ -60,7 +60,8 @@ void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map)
   proto_data_map.set_self_encryption_version(
       static_cast<uint32_t>(data_map.self_encryption_version));
   if (!data_map.content.empty()) {
-    proto_data_map.set_content(data_map.content);
+    proto_data_map.set_content(
+        std::string(std::begin(data_map.content), std::end(data_map.content)));
   } else {
     for (auto& chunk_detail : data_map.chunks) {
       protobuf::ChunkDetails* chunk_details = proto_data_map.add_chunk_details();
@@ -99,10 +100,12 @@ void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map) {
   data_map.self_encryption_version =
       static_cast<EncryptionAlgorithm>(proto_data_map.self_encryption_version());
   if (proto_data_map.has_content() && proto_data_map.chunk_details_size() != 0) {
-    data_map.content = proto_data_map.content();
+    data_map.content =
+        ByteVector(std::begin(proto_data_map.content()), std::end(proto_data_map.content()));
     ExtractChunkDetails(proto_data_map, data_map);
   } else if (proto_data_map.has_content()) {
-    data_map.content = proto_data_map.content();
+    data_map.content =
+        ByteVector(std::begin(proto_data_map.content()), std::end(proto_data_map.content()));
   } else if (proto_data_map.chunk_details_size() != 0) {
     ExtractChunkDetails(proto_data_map, data_map);
   }

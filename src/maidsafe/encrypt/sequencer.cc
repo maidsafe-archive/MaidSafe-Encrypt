@@ -30,8 +30,8 @@ const SequenceBlock kInvalidSeqBlock(std::make_pair(std::numeric_limits<uint64_t
 }  // unnamed namespace
 
 void Sequencer::Add(ByteVector data, uint64_t position) {
-  if(data.size() == kMaxChunkSize && position % kMaxChunkSize == 0)
-    has_chunks_.insert(position / kMaxChunkSize);  
+  if (data.size() == kMaxChunkSize && position % kMaxChunkSize == 0)
+    has_chunks_.insert(position / kMaxChunkSize);
   // If the insertion point is past the current end, just insert a new element
   if (blocks_.empty() || position > (blocks_.rbegin()->first + blocks_.begin()->second.size())) {
     auto result = blocks_.insert(std::make_pair(position, std::move(data)));
@@ -132,13 +132,15 @@ ByteVector Sequencer::Read(uint32_t length, uint64_t position) {
     return (pos.first + pos.second.size() >= position);
   });
 
-  auto offset(itr->first + itr->second.size() - position);
+  auto offset(position - itr->first);
   ByteVector ret_vec;
   if (itr == std::end(blocks_) || (itr->first + itr->second.size()) < length)
     return ret_vec;
-  ret_vec.resize(length);
-  std::copy(std::begin(itr->second) + offset, std::begin(itr->second) + offset + length,
-            std::begin(ret_vec));
+  auto vec_length(std::min(static_cast<uint64_t>(length), itr->second.size() - offset));
+
+  ret_vec.resize(vec_length);
+  std::copy(std::begin(itr->second) + offset, std::begin(itr->second) + offset +
+    vec_length, std::begin(ret_vec));
   return ret_vec;
 }
 

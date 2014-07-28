@@ -36,8 +36,77 @@ namespace encrypt {
 
 namespace test {
 
-TEST(SequencerTest, BEH_Constructor) {
+TEST(SequencerTest, BEH_Chunk1WriteRead) {
+  Sequencer seq;
+  ByteVector vec{'a', 'b', '2'};
+  seq.Add(vec, 0);
+  ByteVector result(seq.Read(3, 0));
+  EXPECT_TRUE(vec.size() == 3);
+  EXPECT_TRUE(result.size() == 3);
+  EXPECT_EQ(vec, result);
+  // Try reading at an offset.
+  ByteVector result2(seq.Read(2, 1));
+  EXPECT_EQ(result2.size(), 2);
+  EXPECT_EQ(vec[1], result2[0]);
+  // Try reading past end.
+  ByteVector result3(seq.Read(3, 2));
+  EXPECT_EQ(result3.size(), 1);
+  EXPECT_EQ(vec[2], result3[0]);
+  // Try reading past end.
+  ByteVector result4(seq.Read(3, 4));
+  EXPECT_EQ(result4.size(), 0);
 }
+TEST(SequencerTest, BEH_Chunk2WriteRead) {
+  Sequencer seq;
+  ByteVector vec{'a', 'b', '2'};
+  seq.Add(vec, 0 + kMaxChunkSize);
+  ByteVector result(seq.Read(3, 0 + kMaxChunkSize));
+  EXPECT_TRUE(vec.size() == 3);
+  EXPECT_TRUE(result.size() == 3);
+  EXPECT_EQ(vec, result);
+  // Try reading at an offset.
+  ByteVector result2(seq.Read(2, 1 + kMaxChunkSize));
+  EXPECT_EQ(result2.size(), 2);
+  EXPECT_EQ(vec[1], result2[0]);
+  // Try reading past end.
+  ByteVector result3(seq.Read(3, 2 + kMaxChunkSize));
+  EXPECT_EQ(result3.size(), 1);
+  EXPECT_EQ(vec[2], result3[0]);
+  // Try reading past end.
+  ByteVector result4(seq.Read(3, 4 + kMaxChunkSize));
+  EXPECT_EQ(result4.size(), 0);
+}
+
+TEST(SequencerTest, BEH_Chunk2WriteReadOffset) {
+  Sequencer seq;
+  ByteVector vec{'a', 'b', '2'};
+  seq.Add(vec, 100 + kMaxChunkSize);
+  ByteVector result(seq.Read(3, 100 + kMaxChunkSize));
+  EXPECT_TRUE(vec.size() == 3);
+  EXPECT_TRUE(result.size() == 3);
+  EXPECT_EQ(vec, result);
+  // Try reading at an offset.
+  ByteVector result2(seq.Read(2, 101 + kMaxChunkSize));
+  EXPECT_EQ(result2.size(), 2);
+  EXPECT_EQ(vec[1], result2[0]);
+  // Try reading past end.
+  ByteVector result3(seq.Read(3, 102 + kMaxChunkSize));
+  EXPECT_EQ(result3.size(), 1);
+  EXPECT_EQ(vec[2], result3[0]);
+  // Try reading past end.
+  ByteVector result4(seq.Read(3, 104 + kMaxChunkSize));
+  EXPECT_EQ(result4.size(), 0);
+  }
+
+  TEST(SequencerTest, BEH_ReadPastEnd) {
+  Sequencer seq;
+  ByteVector vec{'a', 'b', '2'};
+  seq.Add(vec, 50 + kMaxChunkSize);
+  ByteVector result(seq.Read(3, 100 + kMaxChunkSize));
+  EXPECT_TRUE(vec.size() == 3);
+  EXPECT_TRUE(result.size() == 0);
+
+  }
 
 }  // namespace test
 

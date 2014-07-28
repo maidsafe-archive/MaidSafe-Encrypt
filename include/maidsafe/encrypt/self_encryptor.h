@@ -86,13 +86,17 @@ class SelfEncryptor {
   // let us know to retrieve the old data and this call will do that
   // Therefore any chunks > main_encrypt_queue_ are fully contained here
   void PrepareWindow(uint32_t length, uint64_t position);
+  uint32_t GetChunkSize(uint32_t chunk_num);
+  uint32_t GetNumChunks();
+  uint32_t GetNextChunkNumber(uint32_t chunk_number);
+  uint32_t GetPreviousChunkNumber(uint32_t chunk_number);
   // Retrieves the encrypted chunk from chunk_store_ and decrypts it to "data".
   ByteVector DecryptChunk(uint32_t chunk_num);
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
   // encryption pad. 
   void GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVector& iv, ByteVector& pad);
   // Encrypts the chunk and stores in chunk_store_
-  void EncryptChunk(uint32_t chunk_num, byte* data, uint32_t length);
+  void EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length);
   void CalculatePreHash(uint32_t chunk_num, byte* data, uint32_t length);
   bool TruncateUp(uint64_t position);
   bool AppendNulls(uint64_t position);

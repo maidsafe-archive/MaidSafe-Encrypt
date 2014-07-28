@@ -48,9 +48,6 @@ struct ChunkDetails {
   ChunkDetails()
       : hash(),
         pre_hash(),
-        old_n1_pre_hash(),
-        old_n2_pre_hash(),
-        pre_hash_state(kEmpty),
         storage_state(kUnstored),
         size(0) {}
   ByteVector hash;                           // SHA512 of processed chunk
