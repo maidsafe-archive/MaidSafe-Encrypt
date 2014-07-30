@@ -26,7 +26,9 @@
 #include <string>
 #include <array>
 #include <vector>
-#include <set>
+#include <map>
+#include "boost/numeric/ublas/vector_sparse.hpp"
+#include "boost/numeric/ublas/io.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/data_buffer.h"
@@ -47,7 +49,7 @@ extern const EncryptionAlgorithm kSelfEncryptionVersion;
 extern const EncryptionAlgorithm kDataMapEncryptionVersion;
 static const uint32_t kQueueSize(kMaxChunkSize * 16);
 class Sequencer;
-class Cache; 
+class Cache;
 
 crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& this_id,
                                   const DataMap& data_map);
@@ -72,9 +74,7 @@ class SelfEncryptor {
   // Forces all buffered data to be encrypted.  Missing portions of the file are filled with '\0's
   bool Flush();
 
-  uint64_t size() const {
-    return (file_size_ < truncated_file_size_) ? truncated_file_size_ : file_size_;
-  }
+  uint64_t size() const { return file_size_; }
   const DataMap& data_map() const { return data_map_; }
   const DataMap& original_data_map() const { return kOriginalDataMap_; }
 
@@ -82,18 +82,15 @@ class SelfEncryptor {
   void PopulateMainQueue();
   // Add any write to sequencer. Writes > main_encrypt_queue_ go here
   // This call will handle sequencer_ resize if required
-  // if we are adding to a new chunk location the sequencer will 
+  // if we are adding to a new chunk location the sequencer will
   // let us know to retrieve the old data and this call will do that
   // Therefore any chunks > main_encrypt_queue_ are fully contained here
+  bool FlushAll();
   void PrepareWindow(uint32_t length, uint64_t position);
-  uint32_t GetChunkSize(uint32_t chunk_num);
-  uint32_t GetNumChunks();
-  uint32_t GetNextChunkNumber(uint32_t chunk_number);
-  uint32_t GetPreviousChunkNumber(uint32_t chunk_number);
   // Retrieves the encrypted chunk from chunk_store_ and decrypts it to "data".
   ByteVector DecryptChunk(uint32_t chunk_num);
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
-  // encryption pad. 
+  // encryption pad.
   void GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVector& iv, ByteVector& pad);
   // Encrypts the chunk and stores in chunk_store_
   void EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length);
@@ -102,15 +99,28 @@ class SelfEncryptor {
   bool AppendNulls(uint64_t position);
   bool TruncateDown(uint64_t position);
   void DeleteChunk(uint32_t chunk_num);
+  // ###############################################################################
+  // these are some handy helper methods to translate position and lengths into chunk
+  // numbers etc.
+  uint32_t GetChunkSize(uint32_t chunk_num);
+  uint32_t GetNumChunks();
+  std::pair<uint64_t, uint64_t> GetStartEndPositons(uint32_t chunk_number);
+  uint32_t GetNextChunkNumber(uint32_t chunk_number);      // not --chunk_number
+  uint32_t GetPreviousChunkNumber(uint32_t chunk_number);  // not ++chunk_number
+  //########end of helpers#########################################################
+  enum class ChunkStatus {
+    to_be_encrypted,
+    stored,  // therefor only being used as read cache`
+    remote
+  };
 
   DataMap& data_map_, kOriginalDataMap_;
-  std::unique_ptr<Sequencer> sequencer_;
+  boost::numeric::ublas::compressed_vector<byte> sequencer_;
+  std::map<uint32_t, ChunkStatus> chunks_;
   std::unique_ptr<Cache> read_cache_;
   DataBuffer<std::string>& buffer_;
-  ByteVector main_encrypt_queue_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
-  std::set<int> chunks_written_to_, require_calculate_hash_;
-  uint64_t file_size_, truncated_file_size_;
+  uint64_t file_size_;
   mutable std::mutex data_mutex_;
 };
 

@@ -35,11 +35,6 @@ using ByteVector = std::vector<byte>;
 enum class EncryptionAlgorithm : uint32_t;
 
 struct ChunkDetails {
-  enum PreHashState {
-    kEmpty,
-    kOutdated,
-    kOk
-  };
   enum StorageState {
     kStored,
     kPending,

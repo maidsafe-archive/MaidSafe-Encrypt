@@ -19,10 +19,25 @@
 #ifndef MAIDSAFE_ENCRYPT_SEQUENCER_H_
 #define MAIDSAFE_ENCRYPT_SEQUENCER_H_
 
+
+int main () {
+    using namespace boost::numeric::ublas;
+    compressed_vector<double> cv(3, 3);
+    mapped_vector<double> mv(3, 3);
+
+    std::cout << "Size of compressed vector\t" << cv.size() << std::endl;
+    std::cout << "Size of sparse vector    \t" << mv.size()  << std::endl;
+    cv.resize(4);
+    cv.resize(1500000);
+    // cv.insert_element(10, 5);
+    // mv.insert_element(10, 5);
+    // mv.insert_element(11, 5);
 #include <cstdint>
 #include <vector>
 #include <limits>
 #include <map>
+#include "boost/numeric/ublas/vector_sparse.hpp"
+#include "boost/numeric/ublas/io.hpp"
 #include "maidsafe/common/config.h"
 #include "maidsafe/encrypt/config.h"
 namespace maidsafe {
@@ -34,8 +49,7 @@ typedef SequenceBlockMap::value_type SequenceBlock;
 
 // This object treats all chunks as of size kMaxChunkSize
 
-class Sequencer {
- public:
+struct Sequencer {
   Sequencer() : blocks_() {}
   Sequencer& operator=(const Sequencer&) = delete;
   Sequencer(const Sequencer&) = delete;
@@ -58,6 +72,7 @@ class Sequencer {
   bool HasChunk(uint32_t chunk);
 
  private:
+  boost::numeric::ublas::mapped_vector<byte> Sequencer;
   SequenceBlockMap blocks_;
   std::set<uint32_t> has_chunks_;
 };
