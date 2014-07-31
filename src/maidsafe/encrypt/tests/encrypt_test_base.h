@@ -41,13 +41,13 @@ class EncryptTestBase {
         num_procs_(num_procs),
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
                      [](const std::string& name, const NonEmptyString&) {
-                        LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
-                        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
-                      },
-                      *test_dir_),
+                       LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
+                       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
+                     },
+                     *test_dir_),
         data_map_(),
         get_from_store_([this](const std::string& name) { return local_store_.Get(name); }),
-        self_encryptor_(new SelfEncryptor(data_map_, local_store_, get_from_store_, num_procs_)),
+        self_encryptor_(new SelfEncryptor(data_map_, local_store_, get_from_store_)),
         original_(),
         decrypted_() {}
 

@@ -60,8 +60,7 @@ DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
 class SelfEncryptor {
  public:
   SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
-                std::function<NonEmptyString(const std::string&)> get_from_store,
-                int num_procs = 0);
+                std::function<NonEmptyString(const std::string&)> get_from_store);
   ~SelfEncryptor();
   SelfEncryptor(const SelfEncryptor&) = delete;
   SelfEncryptor(SelfEncryptor&&) = delete;
@@ -85,7 +84,7 @@ class SelfEncryptor {
   // if we are adding to a new chunk location the sequencer will
   // let us know to retrieve the old data and this call will do that
   // Therefore any chunks > main_encrypt_queue_ are fully contained here
-  bool FlushAll();
+  void FlushAll();
   void PrepareWindow(uint32_t length, uint64_t position);
   // Retrieves the encrypted chunk from chunk_store_ and decrypts it to "data".
   ByteVector DecryptChunk(uint32_t chunk_num);
@@ -95,9 +94,6 @@ class SelfEncryptor {
   // Encrypts the chunk and stores in chunk_store_
   void EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length);
   void CalculatePreHash(uint32_t chunk_num, byte* data, uint32_t length);
-  bool TruncateUp(uint64_t position);
-  bool AppendNulls(uint64_t position);
-  bool TruncateDown(uint64_t position);
   void DeleteChunk(uint32_t chunk_num);
   // ###############################################################################
   // these are some handy helper methods to translate position and lengths into chunk
@@ -107,6 +103,7 @@ class SelfEncryptor {
   std::pair<uint64_t, uint64_t> GetStartEndPositons(uint32_t chunk_number);
   uint32_t GetNextChunkNumber(uint32_t chunk_number);      // not --chunk_number
   uint32_t GetPreviousChunkNumber(uint32_t chunk_number);  // not ++chunk_number
+  uint32_t GetChunkNumber(uint64_t position);
   //########end of helpers#########################################################
   enum class ChunkStatus {
     to_be_encrypted,
