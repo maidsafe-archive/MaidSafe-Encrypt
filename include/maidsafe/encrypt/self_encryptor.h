@@ -73,7 +73,6 @@ class SelfEncryptor {
   // Forces all buffered data to be encrypted.  Missing portions of the file are filled with '\0's
   bool Flush();
 
-  uint64_t size() const { return file_size_; }
   const DataMap& data_map() const { return data_map_; }
   const DataMap& original_data_map() const { return kOriginalDataMap_; }
 
@@ -101,12 +100,13 @@ class SelfEncryptor {
   uint32_t GetChunkSize(uint32_t chunk_num);
   uint32_t GetNumChunks();
   std::pair<uint64_t, uint64_t> GetStartEndPositons(uint32_t chunk_number);
-  uint32_t GetNextChunkNumber(uint32_t chunk_number);      // not --chunk_number
-  uint32_t GetPreviousChunkNumber(uint32_t chunk_number);  // not ++chunk_number
+  uint32_t GetNextChunkNumber(uint32_t chunk_number);      // not ++chunk_number
+  uint32_t GetPreviousChunkNumber(uint32_t chunk_number);  // not --chunk_number
   uint32_t GetChunkNumber(uint64_t position);
   //########end of helpers#########################################################
   enum class ChunkStatus {
     to_be_encrypted,
+    to_be_hashed,
     stored,  // therefor only being used as read cache`
     remote
   };

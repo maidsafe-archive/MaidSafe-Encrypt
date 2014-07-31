@@ -38,13 +38,13 @@
 #endif
 
 #include "boost/exception/all.hpp"
+#include "maidsafe/common/config.h"
 #include "maidsafe/common/error.h"
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/on_scope_exit.h"//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx protect all public apis
 #include "maidsafe/common/profiler.h"
-#include "maidsafe/common/utils.h"
-#include "maidsafe/common/config.h"
 #include "maidsafe/common/types.h"
-#include "maidsafe/common/on_scope_exit.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/xor.h"
@@ -190,6 +190,8 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
 
 SelfEncryptor::~SelfEncryptor() {
   SCOPED_PROFILE
+  // Make this an assert that Close has been called already.  If Close has been called, all other
+  // public functions should throw.  Close does the actual flush.  Public Flush is ano-op.
   FlushAll();
 }
 
@@ -213,12 +215,15 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
     return true;
   ByteVector temp;
   temp.reserve(length);
-  if (read_cache_->Get(temp, length, position)) {
-    memcpy(data, temp.data(), length);
-    LOG(kInfo) << " Cache hit";
-  } else {
-    LOG(kInfo) << " Cache miss";
-  }
+  //if (read_cache_->Get(temp, length, position)) {
+  //  memcpy(data, temp.data(), length);
+  //  LOG(kInfo) << " Cache hit";
+  //} else {
+  //  LOG(kInfo) << " Cache miss";
+  //}
+
+
+  // Decrypt required chunks too
   for (uint32_t i(0); i < length; ++i)
     data[i] = sequencer_[position + i];
   return true;
@@ -244,7 +249,7 @@ void SelfEncryptor::FlushAll() {
     return;
   }
   for (const auto& chunk : chunks_) {
-    if (chunk.second == ChunkStatus::to_be_encrypted) {
+    if (chunk.second == ChunkStatus::to_be_hashed) {
       auto this_size(GetChunkSize(chunk.first));
       auto start(0);
       // either we are chunk 0 or we are not :-)
@@ -256,6 +261,7 @@ void SelfEncryptor::FlushAll() {
       for (uint32_t i(start); i < this_size; ++i)
         tmp[i] = sequencer_[i];
       CalculatePreHash(chunk.first, &tmp.data()[0], this_size);
+      chunk.second = ChunkStatus::to_be_encrypted;
     }
   }
   for (auto& chunk : chunks_) {
@@ -287,7 +293,7 @@ void SelfEncryptor::PopulateMainQueue() {
       ByteVector temp(DecryptChunk(i));
       for (const auto& t : temp)
         sequencer_.insert_element(pos++, t);
-      chunks_.insert(std::make_pair(i, ChunkStatus::to_be_encrypted));
+      chunks_.insert(std::make_pair(i, ChunkStatus::stored));
     }
   } else {
     for (const auto& t : data_map_.content)
@@ -296,37 +302,33 @@ void SelfEncryptor::PopulateMainQueue() {
 }
 
 void SelfEncryptor::PrepareWindow(uint32_t length, uint64_t position) {
-  auto first_chunk(position / kMaxChunkSize);
-
-  if (first_chunk < 3)  // we keep at least three chunks in sequencer at all times
-    return;
+  auto first_chunk(GetChunkNumber(position));
+  
   // we do not write around to chunk zeero here as we are writing forward
-  auto last_chunk(first_chunk + (length / kMaxChunkSize));
-  if (position % kMaxChunkSize != 0)
-    ++last_chunk;
+  auto last_chunk(GetChunkNumber(position + length));
 
-
+  // first_chunk is confusing name for updated itr
   for (; first_chunk <= last_chunk; ++first_chunk) {
     auto current_chunk_itr = chunks_.find(first_chunk);
-    auto pos(first_chunk * kMaxChunkSize);
+    auto pos(GetStartEndPositons(first_chunk).first);
     if (current_chunk_itr != std::end(chunks_)) {
       if (current_chunk_itr->second == ChunkStatus::remote) {
         ByteVector tmp(DecryptChunk(first_chunk));
         for (const auto& t : tmp)
           sequencer_[pos++] = t;
-        current_chunk_itr->second = ChunkStatus::to_be_encrypted;
+        current_chunk_itr->second = ChunkStatus::to_be_hashed;
       }
     } else {
-      chunks_.insert(std::make_pair(first_chunk, ChunkStatus::to_be_encrypted));
+      chunks_.insert(std::make_pair(first_chunk, ChunkStatus::to_be_hashed));
     }
   }
 
   // get window plus next 2 chunks as they
-  auto current_chunk_itr = chunks_.find(first_chunk);
-  auto pos(first_chunk * kMaxChunkSize);
+  auto current_chunk_itr = chunks_.find(last_chunk);
+  auto pos(GetStartEndPositons(last_chunk).first);
   if (current_chunk_itr != std::end(chunks_)) {
     if (current_chunk_itr->second == ChunkStatus::remote) {
-      ByteVector tmp(DecryptChunk(first_chunk));
+      ByteVector tmp(DecryptChunk(current_chunk_itr->first));
       for (const auto& t : tmp)
         sequencer_[pos++] = t;
       current_chunk_itr->second = ChunkStatus::to_be_encrypted;
@@ -352,10 +354,11 @@ ByteVector SelfEncryptor::DecryptChunk(uint32_t chunk_num) {
     content = get_from_store_(std::string(std::begin(data_map_.chunks[chunk_num].hash),
                                           std::end(data_map_.chunks[chunk_num].hash)));
   }
-  catch (std::exception& e) {
+  catch (const std::exception& e) {
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    throw(e);
+    throw;
   }
+  // asserts on vector sizes
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(&key.data()[0], crypto::AES256_KeySize,
                                                           &iv.data()[0]);
   CryptoPP::StringSource filter(
@@ -395,9 +398,8 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVe
 void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length) {
   SCOPED_PROFILE
   assert(data_map_.chunks.size() > chunk_num);
-  uint32_t num_chunks = static_cast<uint32_t>(data_map_.chunks.size());
-  uint32_t n_1_chunk = (chunk_num + num_chunks - 1) % num_chunks;
-  uint32_t n_2_chunk = (chunk_num + num_chunks - 2) % num_chunks;
+  uint32_t n_1_chunk(GetPreviousChunkNumber(chunk_num));
+  uint32_t n_2_chunk(GetPreviousChunkNumber(n_1_chunk));
 
   auto chunk_n_itr(chunks_.find(chunk_num));
   auto chunk_n_1_itr(chunks_.find(n_1_chunk));
@@ -406,14 +408,15 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t l
   assert(chunk_n_itr != std::end(chunks_) && "this chunk chunkstatus not found");
   assert(chunk_n_1_itr != std::end(chunks_) && "chunk_n_1 chunkstatus not found");
   assert(chunk_n_2_itr != std::end(chunks_) && "chunk_n_2 chunkstatus not found");
-  assert(chunk_n_1_itr->second != ChunkStatus::to_be_encrypted && "chunk_n_1 hash invalid");
-  assert(chunk_n_2_itr->second != ChunkStatus::to_be_encrypted && "chunk_n_2 hash invalid");
+  assert(chunk_n_1_itr->second != ChunkStatus::to_be_hashed && "chunk_n_1 hash invalid");
+  assert(chunk_n_2_itr->second != ChunkStatus::to_be_hashed && "chunk_n_2 hash invalid");
 
   ByteVector pad(kPadSize);
   ByteVector key(crypto::AES256_KeySize);
   ByteVector iv(crypto::AES256_IVSize);
   GetPadIvKey(chunk_num, key, iv, pad);
 
+  //assert vector sizes
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(&key.data()[0], crypto::AES256_KeySize,
                                                           &iv.data()[0]);
 
@@ -435,12 +438,12 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t l
                               std::end(data_map_.chunks[chunk_num].hash)),
                   NonEmptyString(chunk_content));
   }
-  catch (std::exception& e) {
+  catch (const std::exception& e) {
     LOG(kError) << e.what() << "Could not store "
                 << Base64Substr(std::string(std::begin(data_map_.chunks[chunk_num].hash),
                                             std::begin(data_map_.chunks[chunk_num].hash)));
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    throw(e);
+    throw;
   }
   chunk_n_itr->second = ChunkStatus::stored;
   {
