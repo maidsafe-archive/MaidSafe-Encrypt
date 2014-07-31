@@ -58,9 +58,9 @@ target_include_directories(benchmark_encrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(benchmark_encrypt maidsafe_encrypt maidsafe_test)
 
 if(MaidsafeTesting)
-  ms_add_executable(TESTencrypt "Tests/Encrypt"  ${EncryptTestsAllFiles})
-  target_include_directories(TESTencrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client maidsafe_test)
+  ms_add_executable(test_encrypt "Tests/Encrypt"  ${EncryptTestsAllFiles})
+  target_include_directories(test_encrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_link_libraries(test_encrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client maidsafe_test)
 endif()
 
 ms_rename_outdated_built_exes()
@@ -80,7 +80,7 @@ target_compile_options(maidsafe_encrypt PRIVATE $<$<BOOL:${OPENMP_FOUND}>:${Open
 #==================================================================================================#
 if(MaidsafeTesting)
   ms_add_default_tests()
-  ms_add_gtests(TESTencrypt)
+  ms_add_gtests(test_encrypt)
   set(Timeout 300)
   ms_update_test_timeout(Timeout)
   set_property(TEST BasicTest.BEH_WriteLongAndShort65536SegmentsReadThenRewrite PROPERTY TIMEOUT ${Timeout})
@@ -98,6 +98,6 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ COMPONENT Development DESTINATI
 install(TARGETS benchmark_encrypt COMPONENT Benchmarkss CONFIGURATIONS Release RUNTIME DESTINATION bin)
 
 if(MaidsafeTesting)
-  install(TARGETS TESTencrypt COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug)
-  install(TARGETS TESTencrypt COMPONENT Tests CONFIGURATIONS Release RUNTIME DESTINATION bin)
+  install(TARGETS test_encrypt COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug)
+  install(TARGETS test_encrypt COMPONENT Tests CONFIGURATIONS Release RUNTIME DESTINATION bin)
 endif()
