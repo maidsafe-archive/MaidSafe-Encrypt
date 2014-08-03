@@ -34,7 +34,7 @@
 #include "maidsafe/common/data_buffer.h"
 
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/config.h"
+// #include "maidsafe/encrypt/config.h"
 
 namespace maidsafe {
 
@@ -91,8 +91,8 @@ class SelfEncryptor {
   //########end of helpers#########################################################
 
   enum class ChunkStatus {
-    to_be_encrypted,
     to_be_hashed,
+    to_be_encrypted,
     stored,  // therefor only being used as read cache`
     remote
   };

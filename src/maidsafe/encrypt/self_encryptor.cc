@@ -94,9 +94,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
   }
 }
 
-SelfEncryptor::~SelfEncryptor() {
-  assert(!closed_ && "file not closed closed");
-}
+SelfEncryptor::~SelfEncryptor() { assert(!closed_ && "file not closed closed"); }
 
 bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) {
   if (closed_)
@@ -104,7 +102,7 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
   on_scope_exit ose([this] { CleanUpAfterException(); });
   SCOPED_PROFILE
   ByteVector to_be_written(data, data + length);  // copy - inefficient
-  read_cache_->Put(to_be_written, position);
+  // read_cache_->Put(to_be_written, position);
 
   file_size_ = std::max(file_size_, length + position);
   PrepareWindow(length, position, true);
@@ -122,14 +120,14 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   file_size_ = std::max(file_size_, length + position);
   // if (length == 0)
   //   return true;
-  ByteVector temp;
-  temp.reserve(length);
-  if (read_cache_->Get(temp, length, position)) {
-   memcpy(data, temp.data(), length);
-   LOG(kInfo) << " Cache hit";
-  } else {
-   LOG(kInfo) << " Cache miss";
-  }
+  // ByteVector temp;
+  // temp.reserve(length);
+  // if (read_cache_->Get(temp, length, position)) {
+  //  memcpy(data, temp.data(), length);
+  //  LOG(kInfo) << " Cache hit";
+  // } else {
+  //  LOG(kInfo) << " Cache miss";
+  // }
 
   PrepareWindow(length, position, false);
   for (uint32_t i(0); i < length; ++i)
@@ -174,15 +172,15 @@ void SelfEncryptor::Close() {
       auto this_size(GetChunkSize(chunk.first));
       auto pos = GetStartEndPositions(chunk.first);
 
-      fut.emplace_back(std::async([=]() {
-        ByteVector tmp(this_size);
-        for (uint32_t i(0); i < this_size; ++i)
-          tmp[i] = sequencer_[i + pos.first];
-        assert(tmp.size() == this_size && "vector diff size from chunk size");
-        data_map_.chunks[chunk.first].pre_hash.resize(crypto::SHA512::DIGESTSIZE);
-        CryptoPP::SHA512().CalculateDigest(&data_map_.chunks[chunk.first].pre_hash.data()[0],
-                                           &tmp.data()[0], tmp.size());
-      }));
+      // fut.emplace_back(std::async([=]() {
+      ByteVector tmp(this_size);
+      for (uint32_t i(0); i < this_size; ++i)
+        tmp[i] = sequencer_[i + pos.first];
+      assert(tmp.size() == this_size && "vector diff size from chunk size");
+      data_map_.chunks[chunk.first].pre_hash.resize(crypto::SHA512::DIGESTSIZE);
+      CryptoPP::SHA512().CalculateDigest(&data_map_.chunks[chunk.first].pre_hash.data()[0],
+                                         &tmp.data()[0], tmp.size());
+      // }));
       chunk.second = ChunkStatus::to_be_encrypted;
     }
   }
@@ -195,12 +193,12 @@ void SelfEncryptor::Close() {
       auto this_size(GetChunkSize(chunk.first));
       auto pos = GetStartEndPositions(chunk.first);
 
-      fut2.emplace_back(std::async([=]() {
-        ByteVector tmp(this_size);
-        for (uint32_t i(0); i < this_size; ++i)
-          tmp[i] = sequencer_[i + pos.first];
-        EncryptChunk(chunk.first, tmp, this_size);
-      }));
+      // fut2.emplace_back(std::async([=]() {
+      ByteVector tmp(this_size);
+      for (uint32_t i(0); i < this_size; ++i)
+        tmp[i] = sequencer_[i + pos.first];
+      EncryptChunk(chunk.first, tmp, this_size);
+      // }));
       chunk.second = ChunkStatus::stored;
     }
   }
@@ -226,18 +224,20 @@ void SelfEncryptor::PrepareWindow(uint32_t length, uint64_t position, bool write
 
   for (auto i(first_chunk); i <= last_chunk; ++i) {
     auto current_chunk_itr = chunks_.find(i);
-    auto pos(GetStartEndPositions(i).first);
-    if (current_chunk_itr != std::end(chunks_)) {
-      if (current_chunk_itr->second == ChunkStatus::remote) {
-        ByteVector tmp(DecryptChunk(i));
-        if (write)
-          current_chunk_itr->second = ChunkStatus::to_be_hashed;
-        for (const auto& t : tmp)
-          sequencer_[pos++] = t;
-      }
-    } else {
+    if (current_chunk_itr == std::end(chunks_)) {
       write ? chunks_.insert({i, ChunkStatus::to_be_hashed})
             : chunks_.insert({i, ChunkStatus::stored});
+    } else {
+      auto pos(GetStartEndPositions(i).first);
+      if (current_chunk_itr->second == ChunkStatus::remote) {
+        ByteVector tmp(DecryptChunk(i));
+        for (const auto& t : tmp)
+          sequencer_[pos++] = t;
+        write ? current_chunk_itr->second = ChunkStatus::to_be_hashed : current_chunk_itr->second =
+                                                                            ChunkStatus::stored;
+      } else {
+        current_chunk_itr->second = ChunkStatus::to_be_hashed;
+      }
     }
   }
 }
@@ -313,9 +313,9 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVe
 void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length) {
   SCOPED_PROFILE
   assert(data_map_.chunks.size() > chunk_num);
-  assert(chunks_.size() > chunk_num);
+  assert(chunks_.size() >= chunk_num);
 
-  assert(chunks_.size() > chunk_num);
+  assert(chunks_.size() >= chunk_num);
   auto chunk_n_itr(chunks_.find(chunk_num));
 #ifndef NDEBUG
   uint32_t n_1_chunk(GetPreviousChunkNumber(chunk_num));
@@ -323,8 +323,8 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t l
   auto chunk_n_1_itr(chunks_.find(n_1_chunk));
   auto chunk_n_2_itr(chunks_.find(n_2_chunk));
 #endif
-  assert(chunks_.size() > n_1_chunk);
-  assert(chunks_.size() > n_2_chunk);
+  assert(chunks_.size() >= n_1_chunk);
+  assert(chunks_.size() >= n_2_chunk);
   assert(chunk_n_itr != std::end(chunks_) && "this chunk chunkstatus not found");
   assert(chunk_n_1_itr != std::end(chunks_) && "chunk_n_1 chunkstatus not found");
   assert(chunk_n_2_itr != std::end(chunks_) && "chunk_n_2 chunkstatus not found");
@@ -397,16 +397,33 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
 
 uint32_t SelfEncryptor::GetChunkSize(uint32_t chunk) {
   assert(GetNumChunks() != 0 && "file size has no chunks");
-  if (file_size_ < 3U * kMaxChunkSize) {
-    if (chunk < 2U)
-      return file_size_ / 3U;
+  if (file_size_ < 3 * kMaxChunkSize) {
+    if (chunk < 2)
+      return file_size_ / 3;
     else
-      return file_size_ - (2 * (file_size_ / 3U));
+      return file_size_ - (2 * (file_size_ / 3));
   }
-  if (chunk < GetNumChunks())
+
+  if (chunk < GetNumChunks() - 2)
     return kMaxChunkSize;
-  else
-    return file_size_ - ((GetNumChunks() - 1) * kMaxChunkSize);
+ 
+  auto remainder(file_size_ % GetNumChunks());
+  bool penultimate((GetNumChunks() - 2) == chunk);
+
+  if (remainder == 0)
+    return kMaxChunkSize;
+  
+  if (remainder < kMinChunkSize) {
+    if (penultimate)
+      return kMaxChunkSize - kMinChunkSize;
+    else
+      return kMinChunkSize + remainder;
+  } else {
+    if (penultimate)
+      return kMaxChunkSize;
+    else
+      return file_size_ - ((GetNumChunks() - 1) * kMaxChunkSize);
+  }
 }
 
 uint32_t SelfEncryptor::GetNumChunks() {

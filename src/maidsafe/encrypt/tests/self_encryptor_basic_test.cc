@@ -81,6 +81,7 @@ TEST_F(EncryptTest, BEH_SMallfileContentOnly) {
   result.assign(res, res + size);
   EXPECT_EQ(result, temp);
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
+  self_encryptor_->Close();
   EXPECT_EQ(size, data_map_.size());
 }
 

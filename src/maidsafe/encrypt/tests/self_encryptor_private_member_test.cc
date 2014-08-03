@@ -85,16 +85,15 @@ class PrivateSelfEncryptorTest : public testing::Test {
   std::unique_ptr<char[]> original_, decrypted_;
 };
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_SMallfileContentOnly) {
+TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersSmallfileContentOnly) {
   auto this_size((kMinChunkSize * 3) - 1);
   std::string temp(RandomString(this_size));
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
   EXPECT_EQ(size(), this_size);
   EXPECT_EQ(GetNumChunks(), 0);
-  EXPECT_NO_THROW(self_encryptor_->Close());
 }
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_Equal3MinChunks) {
+TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MinChunks) {
   auto this_size((kMinChunkSize * 3));
   std::string temp(RandomString(this_size));
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
@@ -115,6 +114,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_Equal3MinChunks) {
   EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMinChunkSize);
+  // write just 1 byte further and try again (tests last chunk being different size) 
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 1));
   EXPECT_EQ(size(), this_size + 1);
   EXPECT_EQ(GetNumChunks(), 3);
@@ -133,7 +133,53 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_Equal3MinChunks) {
   EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).second, 1 + (3 * kMinChunkSize));
-  // EXPECT_NO_THROW(self_encryptor_->Close());
+}
+
+TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
+  auto this_size((kMaxChunkSize * 3));
+  std::string temp(RandomString(this_size));
+  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
+  EXPECT_EQ(size(), this_size);
+  EXPECT_EQ(GetNumChunks(), 3);
+  EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(2), kMaxChunkSize);
+  EXPECT_EQ(GetNextChunkNumber(0), 1);
+  EXPECT_EQ(GetNextChunkNumber(1), 2);
+  EXPECT_EQ(GetNextChunkNumber(2), 0);
+  EXPECT_EQ(GetPreviousChunkNumber(0), 2);
+  EXPECT_EQ(GetPreviousChunkNumber(1), 0);
+  EXPECT_EQ(GetPreviousChunkNumber(2), 1);
+  EXPECT_EQ(GetStartEndPositions(0).first, 0);
+  EXPECT_EQ(GetStartEndPositions(0).second, kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(1).first, kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMaxChunkSize);
+  // write just 1 byte further and try again (tests last chunk being different size) 
+  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 1));
+  EXPECT_EQ(size(), this_size + 1);
+  EXPECT_EQ(GetNumChunks(), 4);
+  EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(2), kMaxChunkSize - kMinChunkSize);
+  EXPECT_EQ(GetChunkSize(3), kMinChunkSize +1);
+  EXPECT_EQ(GetNextChunkNumber(0), 1);
+  EXPECT_EQ(GetNextChunkNumber(1), 2);
+  EXPECT_EQ(GetNextChunkNumber(2), 3);
+  EXPECT_EQ(GetNextChunkNumber(3), 0);
+  EXPECT_EQ(GetPreviousChunkNumber(0), 3);
+  EXPECT_EQ(GetPreviousChunkNumber(1), 0);
+  EXPECT_EQ(GetPreviousChunkNumber(2), 1);
+  EXPECT_EQ(GetPreviousChunkNumber(3), 2);
+  EXPECT_EQ(GetStartEndPositions(0).first, 0);
+  EXPECT_EQ(GetStartEndPositions(0).second, kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(1).first, kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(2).second, (3 * kMaxChunkSize) - kMinChunkSize);
+  EXPECT_EQ(GetStartEndPositions(3).first, (3 * kMaxChunkSize) - kMinChunkSize);
+  EXPECT_EQ(GetStartEndPositions(3).second, kMinChunkSize + 1 );
 }
 
 }  // namespace test
