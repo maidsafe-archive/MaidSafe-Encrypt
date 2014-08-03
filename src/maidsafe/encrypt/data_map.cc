@@ -22,6 +22,7 @@
 #include "maidsafe/encrypt/byte_array.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/data_map_encryptor.h"
 #include "maidsafe/encrypt/data_map.pb.h"
 #include "maidsafe/encrypt/self_encryptor.h"
 

@@ -16,57 +16,45 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ENCRYPT_DATA_MAP_H_
-#define MAIDSAFE_ENCRYPT_DATA_MAP_H_
+#ifndef MAIDSAFE_ENCRYPT_DATA_MAP_ENCRYPTOR_H_
+#define MAIDSAFE_ENCRYPT_DATA_MAP_ENCRYPTOR_H_
 
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <array>
 #include <vector>
-
+#include <map>
+#include "boost/numeric/ublas/vector_sparse.hpp"
+#include "boost/numeric/ublas/io.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
+#include "maidsafe/common/data_buffer.h"
+
+#include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/config.h"
 
 namespace maidsafe {
 
 namespace encrypt {
-
-using ByteVector = std::vector<byte>;
-
-enum class EncryptionAlgorithm : uint32_t;
-
-struct ChunkDetails {
-  enum StorageState {
-    kStored,
-    kPending,
-    kUnstored
-  };
-  ChunkDetails() : hash(), pre_hash(), storage_state(kUnstored), size(0) {}
-  ByteVector hash;      // SHA512 of processed chunk
-  ByteVector pre_hash;  // SHA512 of unprocessed src data
-  // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
-  // modified content
-  StorageState storage_state;
-  uint32_t size;  // Size of unprocessed source data in bytes
+enum class EncryptionAlgorithm : uint32_t {
+  kSelfEncryptionVersion0 = 0,
+  kDataMapEncryptionVersion0
 };
 
-struct DataMap {
-  DataMap();
-  uint64_t size() const;
-  bool empty() const;
+extern const EncryptionAlgorithm kSelfEncryptionVersion;
+extern const EncryptionAlgorithm kDataMapEncryptionVersion;
 
-  EncryptionAlgorithm self_encryption_version;
-  std::vector<ChunkDetails> chunks;
-  ByteVector content;  // Whole data item, if small enough
-};
+crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& this_id,
+                                  const DataMap& data_map);
 
-bool operator==(const DataMap& lhs, const DataMap& rhs);
-bool operator!=(const DataMap& lhs, const DataMap& rhs);
-
-void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map);
-void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map);
+DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
+                       const std::string& encrypted_data_map);
 
 }  // namespace encrypt
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ENCRYPT_DATA_MAP_H_
+#endif  // MAIDSAFE_ENCRYPT_DATA_MAP_ENCRYPTOR_H_

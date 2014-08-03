@@ -39,25 +39,13 @@
 namespace maidsafe {
 
 namespace encrypt {
-
-enum class EncryptionAlgorithm : uint32_t {
-  kSelfEncryptionVersion0 = 0,
-  kDataMapEncryptionVersion0
-};
-
-extern const EncryptionAlgorithm kSelfEncryptionVersion;
-extern const EncryptionAlgorithm kDataMapEncryptionVersion;
-static const uint32_t kQueueSize(kMaxChunkSize * 16);
-class Sequencer;
 class Cache;
-
-crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& this_id,
-                                  const DataMap& data_map);
-
-DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
-                       const std::string& encrypted_data_map);
+namespace test {
+class PrivateSelfEncryptorTest;
+}
 
 class SelfEncryptor {
+
  public:
   SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
                 std::function<NonEmptyString(const std::string&)> get_from_store);
@@ -71,20 +59,17 @@ class SelfEncryptor {
   // Can truncate up or down
   bool Truncate(uint64_t position);
   // Forces all buffered data to be encrypted.  Missing portions of the file are filled with '\0's
+  void Close();
   bool Flush();
-
+  uint64_t size() const { return file_size_; }
   const DataMap& data_map() const { return data_map_; }
   const DataMap& original_data_map() const { return kOriginalDataMap_; }
 
+  friend class test::PrivateSelfEncryptorTest;
+
  private:
-  void PopulateMainQueue();
-  // Add any write to sequencer. Writes > main_encrypt_queue_ go here
-  // This call will handle sequencer_ resize if required
-  // if we are adding to a new chunk location the sequencer will
-  // let us know to retrieve the old data and this call will do that
-  // Therefore any chunks > main_encrypt_queue_ are fully contained here
-  void FlushAll();
-  void PrepareWindow(uint32_t length, uint64_t position);
+  // read in all data and up to next 2 chunks
+  void PrepareWindow(uint32_t length, uint64_t position, bool write);
   // Retrieves the encrypted chunk from chunk_store_ and decrypts it to "data".
   ByteVector DecryptChunk(uint32_t chunk_num);
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
@@ -92,18 +77,19 @@ class SelfEncryptor {
   void GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVector& iv, ByteVector& pad);
   // Encrypts the chunk and stores in chunk_store_
   void EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length);
-  void CalculatePreHash(uint32_t chunk_num, byte* data, uint32_t length);
   void DeleteChunk(uint32_t chunk_num);
+  void CleanUpAfterException() { } //std::swap(data_map_, kOriginalDataMap_); }
   // ###############################################################################
   // these are some handy helper methods to translate position and lengths into chunk
   // numbers etc.
   uint32_t GetChunkSize(uint32_t chunk_num);
   uint32_t GetNumChunks();
-  std::pair<uint64_t, uint64_t> GetStartEndPositons(uint32_t chunk_number);
+  std::pair<uint64_t, uint64_t> GetStartEndPositions(uint32_t chunk_number);
   uint32_t GetNextChunkNumber(uint32_t chunk_number);      // not ++chunk_number
   uint32_t GetPreviousChunkNumber(uint32_t chunk_number);  // not --chunk_number
   uint32_t GetChunkNumber(uint64_t position);
   //########end of helpers#########################################################
+
   enum class ChunkStatus {
     to_be_encrypted,
     to_be_hashed,
@@ -118,6 +104,7 @@ class SelfEncryptor {
   DataBuffer<std::string>& buffer_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
   uint64_t file_size_;
+  bool closed_;
   mutable std::mutex data_mutex_;
 };
 

@@ -93,47 +93,46 @@ INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536, 10
 // This test is to allow confirmation that memory usage is capped at an
 // acceptable level.  While the test is running, memory usage must be visually
 // monitored.
-TEST(MassiveFile, FUNC_MemCheck) {
-  int kNumProcs(8);
-  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  fs::path store_path(*test_dir / "data_store");
-  DataBuffer<std::string> buffer(
-      MemoryUsage(4294967296U),
-      DiskUsage(4294967296U),
-      [](const std::string& name, const NonEmptyString&) {
-        LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
-        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
-      },
-      store_path);
-
-  DataMap data_map;
-  std::unique_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map, buffer,
-      [&buffer](const std::string& name) { return buffer.Get(name); }, kNumProcs));
-
-  const uint32_t kDataSize((1 << 20) + 1);
-  std::unique_ptr<char> original(new char[kDataSize]);
-  std::string content(RandomString(kDataSize));
-  std::copy(content.data(), content.data() + kDataSize, original.get());
-
-  // Writes ~200MB
-  for (uint64_t offset(0); offset != 200 * kDataSize; offset += kDataSize)
-    EXPECT_TRUE(self_encryptor->Write(original.get(), kDataSize, offset));
-
-  LOG(kInfo) << "Resetting self encryptor.";
-  self_encryptor.reset();
-  // Sleep to allow chosen memory monitor to update its display.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-
-  //  LOG(kInfo) << "Resetting chunk store.";
-  //  client_nfs.reset();
-  //  boost::system::error_code rm_error_code, exists_error_code;
-  //  EXPECT_GT(fs::remove_all(store_path, rm_error_code), 0U) << rm_error_code.message();
-  // EXPECT_FALSE(fs::exists(store_path, exists_error_code)) << "Remove all failed: " <<
-  // rm_error_code
-  //      << (exists_error_code ? "\nExists error: " + exists_error_code.message() : "");
-  //  // Sleep to allow chosen memory monitor to update its display.
-  //  std::this_thread::sleep_for(std::chrono::seconds(3));
-}
+// TEST(MassiveFile, FUNC_MemCheck) {
+//   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+//   fs::path store_path(*test_dir / "data_store");
+//   DataBuffer<std::string> buffer(
+//       MemoryUsage(4294967296U),
+//       DiskUsage(4294967296U),
+//       [](const std::string& name, const NonEmptyString&) {
+//         LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
+//         BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
+//       },
+//       store_path);
+//
+//   DataMap data_map;
+//   std::unique_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map, buffer,
+//       [&buffer](const std::string& name) { return buffer.Get(name); }));
+//
+//   const uint32_t kDataSize((1 << 20) + 1);
+//   std::unique_ptr<char> original(new char[kDataSize]);
+//   std::string content(RandomString(kDataSize));
+//   std::copy(content.data(), content.data() + kDataSize, original.get());
+//
+//   // Writes ~200MB
+//   for (uint64_t offset(0); offset != 200 * kDataSize; offset += kDataSize)
+//     EXPECT_TRUE(self_encryptor->Write(original.get(), kDataSize, offset));
+//
+//   LOG(kInfo) << "Resetting self encryptor.";
+//   self_encryptor.reset();
+//   // Sleep to allow chosen memory monitor to update its display.
+//   std::this_thread::sleep_for(std::chrono::seconds(1));
+//
+//   //  LOG(kInfo) << "Resetting chunk store.";
+//   //  client_nfs.reset();
+//   //  boost::system::error_code rm_error_code, exists_error_code;
+//   //  EXPECT_GT(fs::remove_all(store_path, rm_error_code), 0U) << rm_error_code.message();
+//   // EXPECT_FALSE(fs::exists(store_path, exists_error_code)) << "Remove all failed: " <<
+//   // rm_error_code
+//   //      << (exists_error_code ? "\nExists error: " + exists_error_code.message() : "");
+//   //  // Sleep to allow chosen memory monitor to update its display.
+//   //  std::this_thread::sleep_for(std::chrono::seconds(3));
+// }
 
 }  // namespace test
 
