@@ -57,7 +57,6 @@ namespace maidsafe {
 
 namespace encrypt {
 
-
 SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
                              std::function<NonEmptyString(const std::string&)> get_from_store)
     : data_map_(data_map),
@@ -77,7 +76,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
   auto pos(0);
   if (!data_map_.chunks.empty()) {
     assert(data_map_.chunks.size() >= 3);
-    for (size_t i(0); i < data_map_.chunks.size(); ++i) {
+    for (uint32_t i(0); i < data_map_.chunks.size(); ++i) {
       if (i < 3) {  // just populate first three chunks
         ByteVector temp(DecryptChunk(i));
         for (const auto& t : temp)
@@ -264,7 +263,7 @@ ByteVector SelfEncryptor::DecryptChunk(uint32_t chunk_num) {
                                           std::end(data_map_.chunks[chunk_num].hash)));
   }
   catch (const std::exception& e) {
-    LOG(kInfo) << boost::current_exception_diagnostic_information(true);
+    LOG(kInfo) << boost::diagnostic_information(e);
     throw;
   }
   // asserts on vector sizes
@@ -399,15 +398,15 @@ uint32_t SelfEncryptor::GetChunkSize(uint32_t chunk) {
   assert(GetNumChunks() != 0 && "file size has no chunks");
   if (file_size_ < 3 * kMaxChunkSize) {
     if (chunk < 2)
-      return file_size_ / 3;
+      return static_cast<uint32_t>(file_size_ / 3);
     else
-      return file_size_ - (2 * (file_size_ / 3));
+      return static_cast<uint32_t>(file_size_ - (2 * (file_size_ / 3)));
   }
   // handle all but last 2 chunks
   if (chunk < GetNumChunks() - 2)
     return kMaxChunkSize;
 
-  auto remainder(file_size_ % kMaxChunkSize);
+  uint32_t remainder(static_cast<uint32_t>(file_size_ % kMaxChunkSize));
   bool penultimate((GetNumChunks() - 2) == chunk);
 
   if (remainder == 0)
@@ -435,8 +434,8 @@ uint32_t SelfEncryptor::GetNumChunks() {
   } else if (file_size_ <= 3 * kMaxChunkSize) {
     return 3;
   } else {
-    return file_size_ % kMaxChunkSize == 0 ? file_size_ / kMaxChunkSize
-                                           : (file_size_ / kMaxChunkSize) + 1;
+    return file_size_ % kMaxChunkSize == 0 ? static_cast<uint32_t>(file_size_ / kMaxChunkSize) :
+                                             static_cast<uint32_t>(file_size_ / kMaxChunkSize) + 1;
   }
 }
 
@@ -471,7 +470,7 @@ uint32_t SelfEncryptor::GetPreviousChunkNumber(uint32_t chunk_number) {
 
 uint32_t SelfEncryptor::GetChunkNumber(uint64_t position) {
   assert(GetNumChunks() > 2 && "less than 3 chunks");
-  return position == 0 ? position : file_size_ / position;
+  return position == 0 ? 0 : static_cast<uint32_t>(file_size_ / position);
 }
 
 }  // namespace encrypt
