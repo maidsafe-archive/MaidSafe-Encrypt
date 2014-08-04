@@ -60,9 +60,7 @@ class PrivateSelfEncryptorTest : public testing::Test {
   virtual ~PrivateSelfEncryptorTest() = default;
 
  protected:
-  uint32_t GetChunkSize(uint32_t chunk_num) {
-    return self_encryptor_->GetChunkSize(chunk_num);
-  }
+  uint32_t GetChunkSize(uint32_t chunk_num) { return self_encryptor_->GetChunkSize(chunk_num); }
   uint32_t GetNumChunks() { return self_encryptor_->GetNumChunks(); }
   std::pair<uint64_t, uint64_t> GetStartEndPositions(uint32_t chunk_number) {
     return self_encryptor_->GetStartEndPositions(chunk_number);
@@ -114,7 +112,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MinChunks) {
   EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMinChunkSize);
-  // write just 1 byte further and try again (tests last chunk being different size) 
+  // write just 1 byte further and try again (tests last chunk being different size)
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 1));
   EXPECT_EQ(size(), this_size + 1);
   EXPECT_EQ(GetNumChunks(), 3);
@@ -156,14 +154,14 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
   EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMaxChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMaxChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMaxChunkSize);
-  // write just 1 byte further and try again (tests last chunk being different size) 
+  // write just 1 byte further and try again (tests last chunk being different size)
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 1));
   EXPECT_EQ(size(), this_size + 1);
   EXPECT_EQ(GetNumChunks(), 4);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
   EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
   EXPECT_EQ(GetChunkSize(2), kMaxChunkSize - kMinChunkSize);
-  EXPECT_EQ(GetChunkSize(3), kMinChunkSize +1);
+  EXPECT_EQ(GetChunkSize(3), kMinChunkSize + 1);
   EXPECT_EQ(GetNextChunkNumber(0), 1);
   EXPECT_EQ(GetNextChunkNumber(1), 2);
   EXPECT_EQ(GetNextChunkNumber(2), 3);
@@ -179,7 +177,8 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
   EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMaxChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).second, (3 * kMaxChunkSize) - kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(3).first, (3 * kMaxChunkSize) - kMinChunkSize);
-  EXPECT_EQ(GetStartEndPositions(3).second, kMinChunkSize + 1 );
+  EXPECT_EQ(GetStartEndPositions(3).second,
+            (kMinChunkSize + 1) + ((3 * kMaxChunkSize) - kMinChunkSize));
 }
 
 }  // namespace test

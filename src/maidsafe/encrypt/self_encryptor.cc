@@ -403,16 +403,17 @@ uint32_t SelfEncryptor::GetChunkSize(uint32_t chunk) {
     else
       return file_size_ - (2 * (file_size_ / 3));
   }
-
+  // handle all but last 2 chunks
   if (chunk < GetNumChunks() - 2)
     return kMaxChunkSize;
- 
-  auto remainder(file_size_ % GetNumChunks());
+
+  auto remainder(file_size_ % kMaxChunkSize);
   bool penultimate((GetNumChunks() - 2) == chunk);
 
   if (remainder == 0)
     return kMaxChunkSize;
-  
+  // if the last chunk is goind to be less than kMinChunkSize we reduce the penultimate chunk by
+  // kMinChunkSize
   if (remainder < kMinChunkSize) {
     if (penultimate)
       return kMaxChunkSize - kMinChunkSize;
@@ -422,7 +423,7 @@ uint32_t SelfEncryptor::GetChunkSize(uint32_t chunk) {
     if (penultimate)
       return kMaxChunkSize;
     else
-      return file_size_ - ((GetNumChunks() - 1) * kMaxChunkSize);
+      return remainder;
   }
 }
 
@@ -441,7 +442,20 @@ uint32_t SelfEncryptor::GetNumChunks() {
 
 std::pair<uint64_t, uint64_t> SelfEncryptor::GetStartEndPositions(uint32_t chunk_number) {
   assert(GetNumChunks() > 2 && "less than 3 chunks");
-  auto start(GetChunkSize(0) * chunk_number);
+  auto start(0);
+  bool penultimate((GetNumChunks() - 2) == chunk_number);
+  bool last((GetNumChunks() - 1) == chunk_number);
+
+  if (last) {
+    start = ((GetChunkSize(0) * (chunk_number - 2)) + GetChunkSize(chunk_number - 2) +
+             GetChunkSize(chunk_number - 1));
+  } else if (penultimate) {
+    start = ((GetChunkSize(0) * (chunk_number - 1)) + GetChunkSize(chunk_number - 1));
+  } else {
+
+    start = (GetChunkSize(0) * (chunk_number));
+  }
+
   return std::make_pair(start, start + GetChunkSize(chunk_number));
 }
 
