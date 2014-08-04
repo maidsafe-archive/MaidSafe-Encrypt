@@ -160,7 +160,7 @@ void SelfEncryptor::Close() {
   if (file_size_ < 3 * kMinChunkSize) {
     data_map_.content.clear();
     data_map_.content.reserve(file_size_);
-    std::copy_n(std::begin(sequencer_), file_size_, std::begin(data_map_.content));
+    std::copy_n(std::begin(sequencer_), file_size_, std::back_inserter(data_map_.content));
     return;
   }
   data_map_.chunks.resize(GetNumChunks());
@@ -179,6 +179,7 @@ void SelfEncryptor::Close() {
       data_map_.chunks[chunk.first].pre_hash.resize(crypto::SHA512::DIGESTSIZE);
       CryptoPP::SHA512().CalculateDigest(&data_map_.chunks[chunk.first].pre_hash.data()[0],
                                          &tmp.data()[0], tmp.size());
+      assert(crypto::SHA512::DIGESTSIZE == data_map_.chunks[chunk.first].pre_hash.size() && "Hash size wrong");
       // }));
       chunk.second = ChunkStatus::to_be_encrypted;
     }
@@ -294,19 +295,22 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVe
   assert(n_1_pre_hash.size() == crypto::SHA512::DIGESTSIZE);
   assert(n_2_pre_hash.size() == crypto::SHA512::DIGESTSIZE);
 
-  std::copy_n(std::begin(n_2_pre_hash), crypto::AES256_KeySize, std::begin(key));
+  std::copy_n(std::begin(n_2_pre_hash), crypto::AES256_KeySize, std::back_inserter(key));
   std::copy_n(std::begin(n_2_pre_hash) + crypto::AES256_KeySize, crypto::AES256_IVSize,
-              std::begin(iv));
+              std::back_inserter(iv));
   // pad
   assert(kPadSize == (2 * crypto::SHA512::DIGESTSIZE) + crypto::SHA512::DIGESTSIZE -
                          crypto::AES256_KeySize - crypto::AES256_IVSize &&
          "pad size wrong");
-  std::copy_n(std::begin(n_1_pre_hash), crypto::SHA512::DIGESTSIZE, std::begin(pad));
+  std::copy_n(std::begin(n_1_pre_hash), crypto::SHA512::DIGESTSIZE, std::back_inserter(pad));
   std::copy_n(std::begin(data_map_.chunks[this_chunk_num].pre_hash), crypto::SHA512::DIGESTSIZE,
-              std::begin(pad) + crypto::SHA512::DIGESTSIZE);
+              std::back_inserter(pad) ); // + crypto::SHA512::DIGESTSIZE);
   std::copy_n(std::begin(n_2_pre_hash) + crypto::AES256_KeySize + crypto::AES256_IVSize,
               crypto::SHA512::DIGESTSIZE - crypto::AES256_KeySize - crypto::AES256_IVSize,
-              std::begin(pad) + crypto::SHA512::DIGESTSIZE * 2);
+              std::back_inserter(pad)); // + crypto::SHA512::DIGESTSIZE * 2);
+  assert(pad.size() == kPadSize && "pad size incorrect");
+  assert(key.size() == crypto::AES256_KeySize && "key size incorrect");
+  assert(iv.size() == crypto::AES256_IVSize && "iv size incorrect");
 }
 
 void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length) {
@@ -318,7 +322,11 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t l
   auto chunk_n_itr(chunks_.find(chunk_num));
 #ifndef NDEBUG
   uint32_t n_1_chunk(GetPreviousChunkNumber(chunk_num));
+  LOG(kInfo) << "chunk num " << chunk_num <<  "num chunks " << GetNumChunks() << " previous chunk "
+    << n_1_chunk << " chunks.siz() " << chunks_.size() << std::endl;
   uint32_t n_2_chunk(GetPreviousChunkNumber(n_1_chunk));
+  LOG(kInfo) << "chunk num " << chunk_num <<  "num chunks " << GetNumChunks() << " previous - 1 chunk "
+    << n_2_chunk << std::endl;
   auto chunk_n_1_itr(chunks_.find(n_1_chunk));
   auto chunk_n_2_itr(chunks_.find(n_2_chunk));
 #endif
@@ -460,12 +468,12 @@ std::pair<uint64_t, uint64_t> SelfEncryptor::GetStartEndPositions(uint32_t chunk
 
 uint32_t SelfEncryptor::GetNextChunkNumber(uint32_t chunk_number) {
   assert(GetNumChunks() > 2 && "less than 3 chunks");
-  return (GetNumChunks() + chunk_number + 1) % GetNumChunks();
+  return (GetNumChunks() + chunk_number + 1) % GetNumChunks() - 1;
 }
 
 uint32_t SelfEncryptor::GetPreviousChunkNumber(uint32_t chunk_number) {
   assert(GetNumChunks() > 2 && "less than 3 chunks");
-  return (GetNumChunks() + chunk_number - 1) % GetNumChunks();
+  return (GetNumChunks() + chunk_number - 1) % GetNumChunks() - 1;
 }
 
 uint32_t SelfEncryptor::GetChunkNumber(uint64_t position) {

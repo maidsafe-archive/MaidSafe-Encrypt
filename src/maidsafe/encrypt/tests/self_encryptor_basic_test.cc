@@ -76,13 +76,16 @@ TEST_F(EncryptTest, BEH_SMallfileContentOnly) {
   result.reserve(size);
   char* res(new char[size]);
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
-  EXPECT_TRUE(self_encryptor_->Flush());
   EXPECT_TRUE(self_encryptor_->Read(res, size, 0));
   result.assign(res, res + size);
   EXPECT_EQ(result, temp);
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
   self_encryptor_->Close();
   EXPECT_EQ(size, data_map_.size());
+  auto encryptor_(new SelfEncryptor(data_map_, local_store_, get_from_store_));
+  EXPECT_TRUE(encryptor_->Read(res, size, 0));
+  result.assign(res, res + size);
+  EXPECT_EQ(result, temp);
 }
 
 TEST_F(EncryptTest, BEH_LargeFile) {
@@ -98,6 +101,7 @@ TEST_F(EncryptTest, BEH_LargeFile) {
   EXPECT_EQ(result, temp);
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 1000000));
+  self_encryptor_->Close();
 }
 
 }  // namespace test
