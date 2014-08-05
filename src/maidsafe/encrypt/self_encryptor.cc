@@ -66,7 +66,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
       read_cache_(new Cache(kMaxChunkSize * 8)),
       buffer_(buffer),
       get_from_store_(get_from_store),
-      file_size_(data_map_.size()),
+      file_size_(0),
       closed_(false),
       data_mutex_() {
   if (!get_from_store) {
@@ -86,10 +86,12 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
         chunks_.insert(std::make_pair(i, ChunkStatus::remote));
       }
     }
+    file_size_ = data_map_.size();
   } else if (data_map_.content.size() > 0) {
     for (const auto& t : data_map_.content)
       sequencer_.insert_element(pos++, t);
     chunks_.insert(std::make_pair(0, ChunkStatus::stored));
+    file_size_ = data_map_.size();
   }
 }
 
@@ -105,6 +107,7 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
 
   file_size_ = std::max(file_size_, length + position);
   PrepareWindow(length, position, true);
+  // assert(chunks_.size() == GetNumChunks() && "chunks_.size() mismatch with GetNumChunks()");
   for (const auto& entry : to_be_written)
     sequencer_[position++] = entry;  // direct as may be overwrite
   ose.Release();
@@ -179,7 +182,8 @@ void SelfEncryptor::Close() {
       data_map_.chunks[chunk.first].pre_hash.resize(crypto::SHA512::DIGESTSIZE);
       CryptoPP::SHA512().CalculateDigest(&data_map_.chunks[chunk.first].pre_hash.data()[0],
                                          &tmp.data()[0], tmp.size());
-      assert(crypto::SHA512::DIGESTSIZE == data_map_.chunks[chunk.first].pre_hash.size() && "Hash size wrong");
+      assert(crypto::SHA512::DIGESTSIZE == data_map_.chunks[chunk.first].pre_hash.size() &&
+             "Hash size wrong");
       // }));
       chunk.second = ChunkStatus::to_be_encrypted;
     }
@@ -279,15 +283,30 @@ ByteVector SelfEncryptor::DecryptChunk(uint32_t chunk_num) {
   return data;
 }
 
-void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVector& iv,
+void SelfEncryptor::GetPadIvKey(uint32_t chunk_number, ByteVector& key, ByteVector& iv,
                                 ByteVector& pad) {
   SCOPED_PROFILE
   assert(pad.size() == kPadSize && "pad size incorrect");
   assert(key.size() == crypto::AES256_KeySize && "key size incorrect");
   assert(iv.size() == crypto::AES256_IVSize && "iv size incorrect");
 
-  uint32_t n_1_chunk(GetPreviousChunkNumber(this_chunk_num));
+  uint32_t n_1_chunk(GetPreviousChunkNumber(chunk_number));
+  LOG(kInfo) << "\n chunk num " << chunk_number << " num chunks " << GetNumChunks()
+             << " previous chunk " << n_1_chunk << " chunks.size() " << chunks_.size()
+             << " file size " << file_size_ << " file_size/ kMaxChunkSize "
+             << (file_size_ / kMaxChunkSize) << " file_size % kMaxChunkSize "
+             << (file_size_ % kMaxChunkSize) << std::endl;
   uint32_t n_2_chunk(GetPreviousChunkNumber(n_1_chunk));
+  LOG(kInfo) << "chunk num " << chunk_number << "num chunks " << GetNumChunks()
+             << " previous - 1 chunk " << n_2_chunk << std::endl;
+  auto chunk_n_1_itr(chunks_.find(n_1_chunk));
+  auto chunk_n_2_itr(chunks_.find(n_2_chunk));
+  assert(chunks_.size() >= n_1_chunk);
+  assert(chunks_.size() >= n_2_chunk);
+  assert(chunk_n_1_itr != std::end(chunks_) && "chunk_n_1 chunkstatus not found");
+  assert(chunk_n_2_itr != std::end(chunks_) && "chunk_n_2 chunkstatus not found");
+  assert(chunk_n_1_itr->second != ChunkStatus::to_be_hashed && "chunk_n_1 hash invalid");
+  assert(chunk_n_2_itr->second != ChunkStatus::to_be_hashed && "chunk_n_2 hash invalid");
 
   const ByteVector n_1_pre_hash = data_map_.chunks[n_1_chunk].pre_hash;
   const ByteVector n_2_pre_hash = data_map_.chunks[n_2_chunk].pre_hash;
@@ -303,45 +322,29 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVe
                          crypto::AES256_KeySize - crypto::AES256_IVSize &&
          "pad size wrong");
   std::copy_n(std::begin(n_1_pre_hash), crypto::SHA512::DIGESTSIZE, std::back_inserter(pad));
-  std::copy_n(std::begin(data_map_.chunks[this_chunk_num].pre_hash), crypto::SHA512::DIGESTSIZE,
-              std::back_inserter(pad) ); // + crypto::SHA512::DIGESTSIZE);
+  std::copy_n(std::begin(data_map_.chunks[chunk_number].pre_hash), crypto::SHA512::DIGESTSIZE,
+              std::back_inserter(pad));  // + crypto::SHA512::DIGESTSIZE);
   std::copy_n(std::begin(n_2_pre_hash) + crypto::AES256_KeySize + crypto::AES256_IVSize,
               crypto::SHA512::DIGESTSIZE - crypto::AES256_KeySize - crypto::AES256_IVSize,
-              std::back_inserter(pad)); // + crypto::SHA512::DIGESTSIZE * 2);
+              std::back_inserter(pad));  // + crypto::SHA512::DIGESTSIZE * 2);
   assert(pad.size() == kPadSize && "pad size incorrect");
   assert(key.size() == crypto::AES256_KeySize && "key size incorrect");
   assert(iv.size() == crypto::AES256_IVSize && "iv size incorrect");
 }
 
-void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length) {
+void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_t length) {
   SCOPED_PROFILE
-  assert(data_map_.chunks.size() > chunk_num);
-  assert(chunks_.size() >= chunk_num);
+  assert(data_map_.chunks.size() > chunk_number);
+  assert(chunks_.size() >= chunk_number);
 
-  assert(chunks_.size() >= chunk_num);
-  auto chunk_n_itr(chunks_.find(chunk_num));
-#ifndef NDEBUG
-  uint32_t n_1_chunk(GetPreviousChunkNumber(chunk_num));
-  LOG(kInfo) << "chunk num " << chunk_num <<  "num chunks " << GetNumChunks() << " previous chunk "
-    << n_1_chunk << " chunks.siz() " << chunks_.size() << std::endl;
-  uint32_t n_2_chunk(GetPreviousChunkNumber(n_1_chunk));
-  LOG(kInfo) << "chunk num " << chunk_num <<  "num chunks " << GetNumChunks() << " previous - 1 chunk "
-    << n_2_chunk << std::endl;
-  auto chunk_n_1_itr(chunks_.find(n_1_chunk));
-  auto chunk_n_2_itr(chunks_.find(n_2_chunk));
-#endif
-  assert(chunks_.size() >= n_1_chunk);
-  assert(chunks_.size() >= n_2_chunk);
+  assert(chunks_.size() >= chunk_number);
+  auto chunk_n_itr(chunks_.find(chunk_number));
   assert(chunk_n_itr != std::end(chunks_) && "this chunk chunkstatus not found");
-  assert(chunk_n_1_itr != std::end(chunks_) && "chunk_n_1 chunkstatus not found");
-  assert(chunk_n_2_itr != std::end(chunks_) && "chunk_n_2 chunkstatus not found");
-  assert(chunk_n_1_itr->second != ChunkStatus::to_be_hashed && "chunk_n_1 hash invalid");
-  assert(chunk_n_2_itr->second != ChunkStatus::to_be_hashed && "chunk_n_2 hash invalid");
 
   ByteVector pad(kPadSize);
   ByteVector key(crypto::AES256_KeySize);
   ByteVector iv(crypto::AES256_IVSize);
-  GetPadIvKey(chunk_num, key, iv, pad);
+  GetPadIvKey(chunk_number, key, iv, pad);
   assert(pad.size() == kPadSize && "pad size incorrect");
   assert(key.size() == crypto::AES256_KeySize && "key size incorrect");
   assert(iv.size() == crypto::AES256_IVSize && "iv size incorrect");
@@ -359,14 +362,14 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t l
 
   try {
     std::lock_guard<std::mutex> guard(data_mutex_);
-    buffer_.Store(std::string(std::begin(data_map_.chunks[chunk_num].hash),
-                              std::end(data_map_.chunks[chunk_num].hash)),
+    buffer_.Store(std::string(std::begin(data_map_.chunks[chunk_number].hash),
+                              std::end(data_map_.chunks[chunk_number].hash)),
                   NonEmptyString(chunk_content));
   }
   catch (const std::exception& e) {
     LOG(kError) << e.what() << "Could not store "
-                << Base64Substr(std::string(std::begin(data_map_.chunks[chunk_num].hash),
-                                            std::begin(data_map_.chunks[chunk_num].hash)));
+                << Base64Substr(std::string(std::begin(data_map_.chunks[chunk_number].hash),
+                                            std::begin(data_map_.chunks[chunk_number].hash)));
     LOG(kInfo) << boost::current_exception_diagnostic_information(true);
     throw;
   }
@@ -374,15 +377,14 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t l
   {
     std::lock_guard<std::mutex> guard(data_mutex_);
 
-    data_map_.chunks[chunk_num].hash.resize(crypto::SHA512::DIGESTSIZE);
-    CryptoPP::SHA512().CalculateDigest(&data_map_.chunks[chunk_num].hash.data()[0],
+    data_map_.chunks[chunk_number].hash.resize(crypto::SHA512::DIGESTSIZE);
+    CryptoPP::SHA512().CalculateDigest(&data_map_.chunks[chunk_number].hash.data()[0],
                                        reinterpret_cast<const byte*>(&chunk_content.data()[0]),
                                        chunk_content.size());
-    data_map_.chunks[chunk_num].size = length;  // keep pre-compressed length
-    data_map_.chunks[chunk_num].storage_state = ChunkDetails::kPending;
+    data_map_.chunks[chunk_number].size = length;  // keep pre-compressed length
+    data_map_.chunks[chunk_number].storage_state = ChunkDetails::kPending;
   }
 }
-
 
 void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
   SCOPED_PROFILE
@@ -403,6 +405,8 @@ void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
 //####################Helpers############################
 
 uint32_t SelfEncryptor::GetChunkSize(uint32_t chunk) {
+  if (file_size_ < 3 * kMinChunkSize)
+    return 0;
   assert(GetNumChunks() != 0 && "file size has no chunks");
   if (file_size_ < 3 * kMaxChunkSize) {
     if (chunk < 2)
@@ -435,16 +439,14 @@ uint32_t SelfEncryptor::GetChunkSize(uint32_t chunk) {
 }
 
 uint32_t SelfEncryptor::GetNumChunks() {
-  if (data_map_.size() == file_size_) {
-    return static_cast<uint32_t>(data_map_.chunks.size());
-  } else if (file_size_ < 3 * kMinChunkSize) {
+  if (file_size_ < 3 * kMinChunkSize)
     return 0;
-  } else if (file_size_ <= 3 * kMaxChunkSize) {
+  if (file_size_ < 3 * kMaxChunkSize)
     return 3;
-  } else {
-    return file_size_ % kMaxChunkSize == 0 ? static_cast<uint32_t>(file_size_ / kMaxChunkSize) :
-                                             static_cast<uint32_t>(file_size_ / kMaxChunkSize) + 1;
-  }
+  if (static_cast<uint32_t>(file_size_ % kMaxChunkSize == 0))
+    return static_cast<uint32_t>(file_size_ / kMaxChunkSize);
+  else
+    return static_cast<uint32_t>(file_size_ / kMaxChunkSize) + 1;
 }
 
 std::pair<uint64_t, uint64_t> SelfEncryptor::GetStartEndPositions(uint32_t chunk_number) {
@@ -468,17 +470,20 @@ std::pair<uint64_t, uint64_t> SelfEncryptor::GetStartEndPositions(uint32_t chunk
 
 uint32_t SelfEncryptor::GetNextChunkNumber(uint32_t chunk_number) {
   assert(GetNumChunks() > 2 && "less than 3 chunks");
-  return (GetNumChunks() + chunk_number + 1) % GetNumChunks() - 1;
+  return (GetNumChunks() + chunk_number + 1) % GetNumChunks();
 }
 
 uint32_t SelfEncryptor::GetPreviousChunkNumber(uint32_t chunk_number) {
   assert(GetNumChunks() > 2 && "less than 3 chunks");
-  return (GetNumChunks() + chunk_number - 1) % GetNumChunks() - 1;
+  return (GetNumChunks() + chunk_number - 1) % GetNumChunks();
 }
 
 uint32_t SelfEncryptor::GetChunkNumber(uint64_t position) {
   assert(GetNumChunks() > 2 && "less than 3 chunks");
-  return position == 0 ? 0 : static_cast<uint32_t>(file_size_ / position);
+  if (static_cast<uint32_t>(position % GetChunkSize(0)) == 0)
+    return static_cast<uint32_t>(position / GetChunkSize(0));
+  else
+    return static_cast<uint32_t>(position / GetChunkSize(0)) + 1;
 }
 
 }  // namespace encrypt

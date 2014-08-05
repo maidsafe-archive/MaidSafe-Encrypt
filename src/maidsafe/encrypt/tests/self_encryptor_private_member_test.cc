@@ -181,6 +181,66 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
             (kMinChunkSize + 1) + ((3 * kMaxChunkSize) - kMinChunkSize));
 }
 
+TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3andaHalfMaxChunks) {
+  auto this_size((kMaxChunkSize * 3.5));
+  std::string temp(RandomString(this_size));
+  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
+  EXPECT_EQ(size(), this_size);
+  EXPECT_EQ(GetNumChunks(), 4);
+  EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(2), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(3), kMaxChunkSize / 2);
+  EXPECT_EQ(GetNextChunkNumber(0), 1);
+  EXPECT_EQ(GetNextChunkNumber(1), 2);
+  EXPECT_EQ(GetNextChunkNumber(2), 3);
+  EXPECT_EQ(GetNextChunkNumber(3), 0);
+  EXPECT_EQ(GetPreviousChunkNumber(0), 3);
+  EXPECT_EQ(GetPreviousChunkNumber(1), 0);
+  EXPECT_EQ(GetPreviousChunkNumber(2), 1);
+  EXPECT_EQ(GetPreviousChunkNumber(3), 2);
+  EXPECT_EQ(GetStartEndPositions(0).first, 0);
+  EXPECT_EQ(GetStartEndPositions(0).second, kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(1).first, kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(3).first, 3 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(3).second, 3.5 * kMaxChunkSize);
+}
+
+TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual5MaxChunks) {
+  auto this_size((kMaxChunkSize * 5));
+  std::string temp(RandomString(this_size));
+  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
+  EXPECT_EQ(size(), this_size);
+  EXPECT_EQ(GetNumChunks(), 5);
+  EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(2), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(3), kMaxChunkSize);
+  EXPECT_EQ(GetChunkSize(4), kMaxChunkSize);
+  EXPECT_EQ(GetNextChunkNumber(0), 1);
+  EXPECT_EQ(GetNextChunkNumber(1), 2);
+  EXPECT_EQ(GetNextChunkNumber(2), 3);
+  EXPECT_EQ(GetNextChunkNumber(3), 4);
+  EXPECT_EQ(GetNextChunkNumber(4), 0);
+  EXPECT_EQ(GetPreviousChunkNumber(0), 4);
+  EXPECT_EQ(GetPreviousChunkNumber(1), 0);
+  EXPECT_EQ(GetPreviousChunkNumber(2), 1);
+  EXPECT_EQ(GetPreviousChunkNumber(3), 2);
+  EXPECT_EQ(GetPreviousChunkNumber(4), 3);
+  EXPECT_EQ(GetStartEndPositions(0).first, 0);
+  EXPECT_EQ(GetStartEndPositions(0).second, kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(1).first, kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(3).first, 3 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(3).second, 4 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(4).first, 4 * kMaxChunkSize);
+  EXPECT_EQ(GetStartEndPositions(4).second, 5 * kMaxChunkSize);
+  }
 }  // namespace test
 
 }  // namespace encrypt
