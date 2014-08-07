@@ -78,7 +78,9 @@ class SelfEncryptor {
   // Encrypts the chunk and stores in chunk_store_
   void EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length);
   void DeleteChunk(uint32_t chunk_num);
-  void CleanUpAfterException() { } //std::swap(data_map_, kOriginalDataMap_); }
+  void CleanUpAfterException() { std::swap(data_map_, kOriginalDataMap_);
+  assert(false && "cleaned up after exception");
+  }
   // ###############################################################################
   // these are some handy helper methods to translate position and lengths into chunk
   // numbers etc.
@@ -98,7 +100,8 @@ class SelfEncryptor {
   };
 
   DataMap& data_map_, kOriginalDataMap_;
-  boost::numeric::ublas::compressed_vector<byte> sequencer_;
+  // boost::numeric::ublas::compressed_vector<byte> sequencer_;
+  std::vector<byte> sequencer_;
   std::map<uint32_t, ChunkStatus> chunks_;
   std::unique_ptr<Cache> read_cache_;
   DataBuffer<std::string>& buffer_;

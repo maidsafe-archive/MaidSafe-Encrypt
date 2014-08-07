@@ -449,7 +449,7 @@ TEST_F(BasicTest, BEH_NewRead) {
   EXPECT_TRUE(self_encryptor_->Read(&decrypted_[read_position], kReadSize, read_position));
   for (; index != read_position + kReadSize; ++index)
     ASSERT_EQ(original_[index], decrypted_[index]) << "difference at " << index;
-
+  self_encryptor_->Close();
   // use file smaller than the cache size
   DataMap data_map2;
   const uint32_t kDataSize2(kMaxChunkSize * 5);
@@ -476,6 +476,7 @@ TEST_F(BasicTest, BEH_NewRead) {
       ASSERT_EQ(original2[i + (kReadSize * a)], decrypted2[i]) << "difference at " << i;
     }
   }
+  self_encryptor.Close();
 }
 
 TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
@@ -538,6 +539,7 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
   for (uint32_t i(0); i != kDataSize_; ++i) {
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i << " of " << kDataSize_;
   }
+  self_encryptor.Close();
 }
 
 TEST_F(BasicTest, FUNC_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
@@ -597,6 +599,7 @@ TEST_F(BasicTest, FUNC_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
   for (uint32_t i(0); i != total_size; ++i) {
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i << " of " << total_size;
   }
+  self_encryptor_->Close();
 }
 
 TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
@@ -639,6 +642,7 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
       EXPECT_TRUE(original[i] == recovered[i]);
       count += original[i].size();
     }
+    self_encryptor.Close();
   }
   {
     // rewrite
@@ -663,6 +667,7 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
                                          static_cast<uint32_t>(overwrite[i].size()), count));
         count += overwrite[i].size();
       }
+    self_encryptor.Close();
     }
     SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
     count = 0;
@@ -676,7 +681,9 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
       // EXPECT_EQ(overwrite[i], recovered[i]);
       count += overwrite[i].size();
     }
+    self_encryptor.Close();
   }
+    self_encryptor_->Close();
 }
 
 TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
@@ -773,6 +780,7 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
       }
     }
   }
+    self_encryptor.Close();
 }
 
 TEST_F(BasicTest, BEH_DataMapSizes) {
@@ -919,6 +927,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   EXPECT_EQ(kSize + 2 + kNewSize + 1, self_encryptor_->size());
   EXPECT_EQ(kSize + 2 + kNewSize + 1, TotalSize(data_map_));
   EXPECT_TRUE(data_map_.content.empty());
+  self_encryptor_->Close();
 }
 
 TEST_F(BasicTest, BEH_3SmallChunkRewrite) {
@@ -933,6 +942,7 @@ TEST_F(BasicTest, BEH_3SmallChunkRewrite) {
     ASSERT_EQ(TotalSize(data_map_), size);
     EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered.data()), size, 0));
     ASSERT_EQ(content, recovered);
+    self_encryptor.Close();
   }
   {
     SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
@@ -948,6 +958,7 @@ TEST_F(BasicTest, BEH_3SmallChunkRewrite) {
     recovered.assign(size - 50, 'X');
     EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered.data()), size - 50, 0));
     ASSERT_EQ(content, recovered);
+    self_encryptor.Close();
   }
 }
 
@@ -980,6 +991,7 @@ TEST_F(BasicTest, BEH_nKFile) {
   read = static_cast<uint32_t>(original.size()) - start;
   recovered.resize(read);
   EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(recovered.data()), read, start));
+  self_encryptor_->Close();
 }
 
 TEST_F(BasicTest, BEH_nKFileAppend) {
@@ -996,6 +1008,7 @@ TEST_F(BasicTest, BEH_nKFileAppend) {
     uint32_t read_size(21485 + 1);
     recovered.resize(read_size);
     EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered.data()), read_size, 0));
+  EXPECT_NO_THROW(self_encryptor.Close());
   }
 }
 
@@ -1013,6 +1026,7 @@ TEST_F(BasicTest, BEH_DeleteStoredChunkFromDisk) {
     SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
     EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered.data()),
                                     static_cast<uint32_t>(recovered.size()), 0));
+  EXPECT_NO_THROW(self_encryptor.Close());
   }
 
   // local_store_.Delete(data_map_.chunks[0].hash);
@@ -1111,6 +1125,7 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
           << "failed at chunk " << i << " post hash : " << j;
     }
   }
+  EXPECT_NO_THROW(self_encryptor_->Close());
 }
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
@@ -1136,6 +1151,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
     EXPECT_TRUE(self_encryptor.Read(answer.get(), kReadLength, 0));
     EXPECT_EQ(kTestDataSize + kIncrease, self_encryptor.size());
     ASSERT_LE(kReadLength, self_encryptor.size());
+  EXPECT_NO_THROW(self_encryptor.Close());
     for (uint32_t i = 0; i < kReadLength; ++i) {
       if (i < kTestDataSize) {
         ASSERT_EQ(plain_data[i], answer[i]) << "not match " << i << " from " << kReadLength
@@ -1148,6 +1164,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
   }
   SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
   EXPECT_EQ(kTestDataSize + kIncrease, temp_self_encryptor.size());
+  EXPECT_NO_THROW(temp_self_encryptor.Close());
 }
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
@@ -1179,6 +1196,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
 
     EXPECT_EQ(kTestDataSize, self_encryptor.size());
 
+  EXPECT_NO_THROW(self_encryptor.Close());
     uint32_t read_position(0);
     uint32_t read_length(4096);
     boost::scoped_array<char> answer(new char[read_length]);
@@ -1192,6 +1210,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
 
   SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
   EXPECT_EQ(kTestDataSize, temp_self_encryptor.size());
+  EXPECT_NO_THROW(temp_self_encryptor.Close());
 }
 
 TEST_F(BasicTest, BEH_TruncateDecrease) {
@@ -1335,12 +1354,14 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
           std::string answer(kLength, 1);
           EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(answer.data()), kLength, kPosition));
           ASSERT_EQ(plain_text, answer);
+  EXPECT_NO_THROW(self_encryptor.Close());
         }
         boost::scoped_array<char> answer(new char[kLength]);
         memset(answer.get(), 1, kLength);
         {
           SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
           EXPECT_TRUE(self_encryptor.Read(answer.get(), kLength, kPosition));
+  EXPECT_NO_THROW(self_encryptor.Close());
         }
 
         for (size_t k = 0; k < kLength; ++k)
