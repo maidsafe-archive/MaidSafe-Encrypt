@@ -63,7 +63,6 @@ class Benchmark : public EncryptTestBase, public testing::TestWithParam<uint32_t
     chrono_time_point start_time(std::chrono::high_resolution_clock::now());
     for (uint32_t i(0); i < kTestDataSize_; i += kPieceSize_)
       ASSERT_TRUE(self_encryptor_->Write(&original_[i], kPieceSize_, i));
-    self_encryptor_->Flush();
     chrono_time_point stop_time(std::chrono::high_resolution_clock::now());
     PrintResult(start_time, stop_time, true, compressible);
 
@@ -74,6 +73,7 @@ class Benchmark : public EncryptTestBase, public testing::TestWithParam<uint32_t
     for (uint32_t i(0); i < kTestDataSize_; ++i)
       ASSERT_EQ(original_[i], decrypted_[i]) << "failed @ count " << i;
     PrintResult(start_time, stop_time, false, compressible);
+    self_encryptor_->Close();
   }
   const uint32_t kTestDataSize_, kPieceSize_;
 };
