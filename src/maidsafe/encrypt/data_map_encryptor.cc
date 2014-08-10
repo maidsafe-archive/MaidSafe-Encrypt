@@ -140,7 +140,8 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& thi
           new XORFilter(new CryptoPP::StringSink(*protobuf_encrypted_data_map.mutable_contents()),
                         xor_hash, crypto::SHA512::DIGESTSIZE)),
       1);
-  aes_filter.Put2(&array_data_map[0], array_data_map.size(), -1, true);
+  aes_filter.Put2(reinterpret_cast<const byte*>(&serialised_data_map.data()[0]),
+                  serialised_data_map.size(), -1, true);
 
   assert(!protobuf_encrypted_data_map.contents().empty());
 

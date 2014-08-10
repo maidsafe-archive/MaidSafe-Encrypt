@@ -80,4 +80,3 @@ bool Cache::Get(std::vector<byte>& data, uint32_t length, uint64_t file_position
 }  // namespace encrypt
 
 }  // namespace maidsafe
-

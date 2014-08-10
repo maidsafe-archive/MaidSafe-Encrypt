@@ -36,9 +36,8 @@ namespace test {
 
 class EncryptTestBase {
  public:
-  explicit EncryptTestBase(int num_procs)
+  explicit EncryptTestBase()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        num_procs_(num_procs),
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
                      [](const std::string& name, const NonEmptyString&) {
                        LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
@@ -55,7 +54,6 @@ class EncryptTestBase {
 
  protected:
   maidsafe::test::TestPath test_dir_;
-  int num_procs_;
   DataBuffer<std::string> local_store_;
   DataMap data_map_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;

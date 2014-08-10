@@ -20,21 +20,10 @@
 #define MAIDSAFE_ENCRYPT_DATA_MAP_ENCRYPTOR_H_
 
 #include <cstdint>
-#include <functional>
-#include <memory>
-#include <mutex>
 #include <string>
-#include <array>
-#include <vector>
-#include <map>
-#include "boost/numeric/ublas/vector_sparse.hpp"
-#include "boost/numeric/ublas/io.hpp"
-#include "maidsafe/common/crypto.h"
-#include "maidsafe/common/types.h"
-#include "maidsafe/common/data_buffer.h"
-
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/config.h"
+#include "maidsafe/common/types.h"
+#include "maidsafe/common/crypto.h"
 
 namespace maidsafe {
 

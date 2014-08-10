@@ -33,8 +33,8 @@ ByteArray GetNewByteArray(uint32_t size);
 
 uint32_t Size(const ByteArray& ptr);
 
-uint32_t MemCopy(const ByteArray& destination, uint32_t destination_offset,
-                 const void* source, uint32_t copy_size);
+uint32_t MemCopy(const ByteArray& destination, uint32_t destination_offset, const void* source,
+                 uint32_t copy_size);
 
 struct ByteArrayDeleter {
   explicit ByteArrayDeleter(uint32_t size) : kSize_(size) {}

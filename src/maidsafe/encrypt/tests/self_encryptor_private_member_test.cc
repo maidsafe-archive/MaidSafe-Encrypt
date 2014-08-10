@@ -60,6 +60,9 @@ class PrivateSelfEncryptorTest : public testing::Test {
   virtual ~PrivateSelfEncryptorTest() = default;
 
  protected:
+  virtual void TearDown() { self_encryptor_->closed_ = true; }
+  uint64_t size() { return self_encryptor_->file_size_; }
+  size_t ChunksSize() { return self_encryptor_->chunks_.size(); }
   uint32_t GetChunkSize(uint32_t chunk_num) { return self_encryptor_->GetChunkSize(chunk_num); }
   uint32_t GetNumChunks() { return self_encryptor_->GetNumChunks(); }
   std::pair<uint64_t, uint64_t> GetStartEndPositions(uint32_t chunk_number) {
@@ -73,7 +76,7 @@ class PrivateSelfEncryptorTest : public testing::Test {
   }
 
   uint32_t GetChunkNumber(uint64_t position) { return self_encryptor_->GetChunkNumber(position); }
-  uint64_t size() { return self_encryptor_->file_size_; }
+  void SetEncryptorSize(uint64_t size) { self_encryptor_->file_size_ = size; }
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
   DataBuffer<std::string> local_store_;
@@ -84,18 +87,12 @@ class PrivateSelfEncryptorTest : public testing::Test {
 };
 
 TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersSmallfileContentOnly) {
-  auto this_size((kMinChunkSize * 3) - 1);
-  std::string temp(RandomString(this_size));
-  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
-  EXPECT_EQ(size(), this_size);
+  SetEncryptorSize((kMinChunkSize * 3) - 1);
   EXPECT_EQ(GetNumChunks(), 0);
 }
 
 TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MinChunks) {
-  auto this_size((kMinChunkSize * 3));
-  std::string temp(RandomString(this_size));
-  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
-  EXPECT_EQ(size(), this_size);
+  SetEncryptorSize(kMinChunkSize * 3);
   EXPECT_EQ(GetNumChunks(), 3);
   EXPECT_EQ(GetChunkSize(0), 1024);
   EXPECT_EQ(GetChunkSize(1), 1024);
@@ -112,9 +109,10 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MinChunks) {
   EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMinChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMinChunkSize);
-  // write just 1 byte further and try again (tests last chunk being different size)
-  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 1));
-  EXPECT_EQ(size(), this_size + 1);
+}
+
+TEST_F(PrivateSelfEncryptorTest, PRIV_Helpers3MinChunksPlus1) {
+  SetEncryptorSize((kMinChunkSize * 3) + 1);
   EXPECT_EQ(GetNumChunks(), 3);
   EXPECT_EQ(GetChunkSize(0), 1024);
   EXPECT_EQ(GetChunkSize(1), 1024);
@@ -134,10 +132,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MinChunks) {
 }
 
 TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
-  auto this_size((kMaxChunkSize * 3));
-  std::string temp(RandomString(this_size));
-  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
-  EXPECT_EQ(size(), this_size);
+  SetEncryptorSize(kMaxChunkSize * 3);
   EXPECT_EQ(GetNumChunks(), 3);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
   EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
@@ -154,9 +149,10 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
   EXPECT_EQ(GetStartEndPositions(1).second, 2 * kMaxChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).first, 2 * kMaxChunkSize);
   EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMaxChunkSize);
-  // write just 1 byte further and try again (tests last chunk being different size)
-  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 1));
-  EXPECT_EQ(size(), this_size + 1);
+}
+
+TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersMaxChunksPlus1) {
+  SetEncryptorSize((kMaxChunkSize * 3) + 1);
   EXPECT_EQ(GetNumChunks(), 4);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
   EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
@@ -182,10 +178,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
 }
 
 TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3andaHalfMaxChunks) {
-  auto this_size((kMaxChunkSize * 3.5));
-  std::string temp(RandomString(this_size));
-  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
-  EXPECT_EQ(size(), this_size);
+  SetEncryptorSize(kMaxChunkSize * 3.5);
   EXPECT_EQ(GetNumChunks(), 4);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
   EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
@@ -210,10 +203,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3andaHalfMaxChunks) {
 }
 
 TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual5MaxChunks) {
-  auto this_size((kMaxChunkSize * 5));
-  std::string temp(RandomString(this_size));
-  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], this_size, 0));
-  EXPECT_EQ(size(), this_size);
+  SetEncryptorSize(kMaxChunkSize * 5);
   EXPECT_EQ(GetNumChunks(), 5);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
   EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
@@ -240,7 +230,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual5MaxChunks) {
   EXPECT_EQ(GetStartEndPositions(3).second, 4 * kMaxChunkSize);
   EXPECT_EQ(GetStartEndPositions(4).first, 4 * kMaxChunkSize);
   EXPECT_EQ(GetStartEndPositions(4).second, 5 * kMaxChunkSize);
-  }
+}
 }  // namespace test
 
 }  // namespace encrypt

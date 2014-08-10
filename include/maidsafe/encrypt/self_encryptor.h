@@ -26,6 +26,7 @@
 #include <string>
 #include <array>
 #include <vector>
+#include <deque>
 #include <map>
 #include "boost/numeric/ublas/vector_sparse.hpp"
 #include "boost/numeric/ublas/io.hpp"
@@ -85,12 +86,12 @@ class SelfEncryptor {
   // ###############################################################################
   // these are some handy helper methods to translate position and lengths into chunk
   // numbers etc.
-  uint32_t GetChunkSize(uint32_t chunk_num);
-  uint32_t GetNumChunks();
-  std::pair<uint64_t, uint64_t> GetStartEndPositions(uint32_t chunk_number);
-  uint32_t GetNextChunkNumber(uint32_t chunk_number);      // not ++chunk_number
-  uint32_t GetPreviousChunkNumber(uint32_t chunk_number);  // not --chunk_number
-  uint32_t GetChunkNumber(uint64_t position);
+  uint32_t GetChunkSize(uint32_t chunk_num) const;
+  uint32_t GetNumChunks() const;
+  std::pair<uint64_t, uint64_t> GetStartEndPositions(uint32_t chunk_number) const;
+  uint32_t GetNextChunkNumber(uint32_t chunk_number) const;      // not ++chunk_number
+  uint32_t GetPreviousChunkNumber(uint32_t chunk_number) const;  // not --chunk_number
+  uint32_t GetChunkNumber(uint64_t position) const;
   //########end of helpers#########################################################
 
   enum class ChunkStatus {

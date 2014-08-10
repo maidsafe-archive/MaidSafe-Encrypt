@@ -25,7 +25,7 @@ namespace maidsafe {
 
 namespace encrypt {
 
-const uint32_t kMinChunkSize(1024); 
+const uint32_t kMinChunkSize(1024);
 using byte = unsigned char;
 using ByteVector = std::vector<byte>;
 

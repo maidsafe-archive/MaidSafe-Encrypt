@@ -33,8 +33,8 @@ uint32_t Size(const std::shared_ptr<byte>& ptr) {
   return ptr ? std::get_deleter<ByteArrayDeleter>(ptr)->kSize_ : 0;
 }
 
-uint32_t MemCopy(const ByteArray& destination, uint32_t destination_offset,
-                 const void* source, uint32_t copy_size) {
+uint32_t MemCopy(const ByteArray& destination, uint32_t destination_offset, const void* source,
+                 uint32_t copy_size) {
   if (Size(destination) < destination_offset) {
     LOG(kWarning) << "Size (" << Size(destination) << ") < offset (" << destination_offset << ").";
     return 0;

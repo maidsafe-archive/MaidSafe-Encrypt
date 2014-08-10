@@ -88,19 +88,19 @@ TEST_F(EncryptTest, BEH_SMallfileContentOnly) {
   EXPECT_EQ(result, temp);
 }
 
-TEST_F(EncryptTest, BEH_LargeFile) {
-  auto size(1024 * 1024);
+TEST_F(EncryptTest, BEH_LargeFileWithLargeGap) {
+  auto size(5 * 1024 * 1024);
   std::string temp(RandomString(size));
   std::string result;
   result.reserve(size);
   char* res(new char[size]);
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
-  EXPECT_TRUE(self_encryptor_->Flush());
   EXPECT_TRUE(self_encryptor_->Read(res, size, 0));
   result.assign(res, res + size);
   EXPECT_EQ(result, temp);
   EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
-  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 1000000));
+  // write a large gap in the file
+  // EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, size * 2));
   self_encryptor_->Close();
 }
 

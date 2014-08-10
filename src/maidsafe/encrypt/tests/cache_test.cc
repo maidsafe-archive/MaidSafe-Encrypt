@@ -73,7 +73,10 @@ TEST(CacheTest, BEH_PutInSequence) {
   Cache cache;
   EXPECT_NO_THROW(Cache cache);
   ByteVector v(10000);
-  std::generate(v.begin(), v.end(), [] {return static_cast<char>(RandomUint32()); ;});
+  std::generate(v.begin(), v.end(), [] {
+    return static_cast<char>(RandomUint32());
+    ;
+  });
   cache.Put(v, 0);
   ByteVector answer;
   EXPECT_TRUE(cache.Get(answer, static_cast<uint32_t>(v.size()), 0));
@@ -87,24 +90,24 @@ TEST(CacheTest, BEH_MoreTHanMaxSize) {
   std::generate(v.begin(), v.end(), [] { return static_cast<char>(RandomUint32()); });
   cache_10.Put(v, 0);
   cache_zero.Put(v, 0);
-  
+
   ByteVector answer;
   EXPECT_FALSE(cache_10.Get(answer, static_cast<uint32_t>(v.size()), 0));
   EXPECT_FALSE(cache_zero.Get(answer, static_cast<uint32_t>(v.size()), 0));
   EXPECT_TRUE(answer.empty());
-
 }
 
 TEST(CacheTest, BEH_PutOutOfSequence) {
   Cache cache;
   EXPECT_NO_THROW(Cache cache);
   ByteVector v(10000);
-  std::generate(v.begin(), v.end(), [] {return static_cast<char>(RandomUint32());});
+  std::generate(v.begin(), v.end(), [] { return static_cast<char>(RandomUint32()); });
   auto v2 = v;
   auto offset = 10;
   cache.Put(v, 0);
   cache.Put(v2, offset);
-  ByteVector answer1, answer2;;
+  ByteVector answer1, answer2;
+  ;
   EXPECT_TRUE(cache.Get(answer1, static_cast<uint32_t>(v2.size()), offset))
       << "Unable to read from just written data";
   EXPECT_EQ(v, answer1) << "invalid data read from an offset";
@@ -121,8 +124,6 @@ TEST(CacheTest, BEH_PutOutOfSequence) {
   cache.Put(v, v.size());
   cache.Put(v, v.size() * 2);
 }
-
-
 
 
 

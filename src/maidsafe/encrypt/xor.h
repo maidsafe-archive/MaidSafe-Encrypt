@@ -43,8 +43,7 @@ const size_t kPadSize((3 * crypto::SHA512::DIGESTSIZE) - crypto::AES256_KeySize 
 
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
  public:
-  XORFilter(CryptoPP::BufferedTransformation* attachment, byte* pad,
-            size_t pad_size = kPadSize)
+  XORFilter(CryptoPP::BufferedTransformation* attachment, byte* pad, size_t pad_size = kPadSize)
       : pad_(pad), count_(0), kPadSize_(pad_size) {
     CryptoPP::Filter::Detach(attachment);
   }

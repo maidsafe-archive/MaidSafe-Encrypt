@@ -63,7 +63,7 @@ const int g_num_procs(Concurrency());
 class EncryptDataMapTest : public EncryptTestBase, public testing::Test {
  public:
   EncryptDataMapTest()
-      : EncryptTestBase(RandomUint32() % (Concurrency() + 1)),
+      : EncryptTestBase(),
         kDataSize_(1024 * 1024 * 20),
         content_(RandomString(kDataSize_)) {
     original_.reset(new char[kDataSize_]);
@@ -100,6 +100,7 @@ TEST_F(EncryptDataMapTest, BEH_EncryptDecryptDataMap) {
     ASSERT_EQ(original_pre_hash, retrieved_pre_hash);
     ASSERT_EQ((*original_itr).size, (*retrieved_itr).size);
   }
+  EXPECT_NO_THROW(self_encryptor_->Close());
 }
 
 TEST_F(EncryptDataMapTest, BEH_DifferentDataMapSameChunk) {
@@ -109,6 +110,8 @@ TEST_F(EncryptDataMapTest, BEH_DifferentDataMapSameChunk) {
     SelfEncryptor self_encryptor_2(data_map_2, local_store_, get_from_store_);
     self_encryptor_1.Write(original_.get(), 16 * 1024, 0);
     self_encryptor_2.Write(original_.get(), 16 * 1024, 0);
+    self_encryptor_1.Close();
+    self_encryptor_2.Close();
   }
   {
     boost::scoped_array<char> result_data;
@@ -125,6 +128,7 @@ TEST_F(EncryptDataMapTest, BEH_DifferentDataMapSameChunk) {
     SelfEncryptor self_encryptor_1(data_map_1, local_store_, get_from_store_);
     self_encryptor_1.Write(temp_data.get(), 500, 1000);
     self_encryptor_1.Truncate(10 * 1024);
+    self_encryptor_1.Close();
   }
   // There's no reference counting in the data store now and the original chunks have been
   // overwritten by this point, so the following fails...
@@ -139,6 +143,7 @@ TEST_F(EncryptDataMapTest, BEH_DifferentDataMapSameChunk) {
   //    for (uint32_t i = 0; i != 16 * 1024; ++i)
   //      ASSERT_EQ(original_[i], result_data[i]) << "i == " << i;
   // }
+  EXPECT_NO_THROW(self_encryptor_->Close());
 }
 
 }  // namespace test
