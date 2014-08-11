@@ -30,7 +30,18 @@ namespace maidsafe {
 
 namespace encrypt {
 
+ChunkDetails::ChunkDetails(ChunkDetails&& other) MAIDSAFE_NOEXCEPT
+    : hash(std::move(other.hash)),
+      pre_hash(std::move(other.pre_hash)),
+      storage_state(std::move(other.storage_state)),
+      size(std::move(other.size)) {}
+
 DataMap::DataMap() : self_encryption_version(kSelfEncryptionVersion), chunks(), content() {}
+
+DataMap::DataMap(DataMap&& other) MAIDSAFE_NOEXCEPT
+    : self_encryption_version(std::move(other.self_encryption_version)),
+      chunks(std::move(other.chunks)),
+      content(std::move(other.content)) {}
 
 uint64_t DataMap::size() const {
   return chunks.empty()

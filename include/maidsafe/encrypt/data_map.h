@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include "maidsafe/common/config.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
 
@@ -42,9 +43,10 @@ struct ChunkDetails {
   };
   ChunkDetails() : hash(), pre_hash(), storage_state(kUnstored), size(0) {}
   ChunkDetails(const ChunkDetails&) = default;
-  ChunkDetails(ChunkDetails&&) = default;
+  ChunkDetails(ChunkDetails&&) MAIDSAFE_NOEXCEPT;
   ChunkDetails& operator=(const ChunkDetails&) = default;
   ~ChunkDetails() = default;
+
   ByteVector hash;      // SHA512 of processed chunk
   ByteVector pre_hash;  // SHA512 of unprocessed src data
   // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
@@ -56,7 +58,7 @@ struct ChunkDetails {
 struct DataMap {
   DataMap();
   DataMap(const DataMap&) = default;
-  DataMap(DataMap&&) = default;
+  DataMap(DataMap&&) MAIDSAFE_NOEXCEPT;
   DataMap& operator=(const DataMap&) = default;
   ~DataMap() = default;
   uint64_t size() const;

@@ -135,7 +135,8 @@ bool SelfEncryptor::Truncate(uint64_t position) {
     } 
   auto old_size = file_size_;
   file_size_ = position;
-  PrepareWindow(file_size_ - old_size, old_size, true);
+  assert((file_size_ - old_size) < std::numeric_limits<uint32_t>::max());
+  PrepareWindow(static_cast<uint32_t>(file_size_ - old_size), old_size, true);
   ose.Release();
   return true;
 }
@@ -320,16 +321,18 @@ void SelfEncryptor::GetPadIvKey(uint32_t chunk_number, ByteVector& key, ByteVect
   assert(chunk_n_1_itr != std::end(chunks_) && "chunk_n_1 chunkstatus not found");
   assert(chunk_n_2_itr != std::end(chunks_) && "chunk_n_2 chunkstatus not found");
 
-  const ByteVector n_1_pre_hash = data_map_.chunks[n_1_chunk].pre_hash;
-  const ByteVector n_2_pre_hash = data_map_.chunks[n_2_chunk].pre_hash;
+  const ByteVector n_1_pre_hash{ data_map_.chunks[n_1_chunk].pre_hash };
+  const ByteVector n_2_pre_hash{ data_map_.chunks[n_2_chunk].pre_hash };
 
   assert(n_1_pre_hash.size() == crypto::SHA512::DIGESTSIZE);
   assert(n_2_pre_hash.size() == crypto::SHA512::DIGESTSIZE);
   key.clear();
-  std::copy_n(std::begin(n_2_pre_hash), crypto::AES256_KeySize, std::back_inserter(key));
+  std::copy(std::begin(n_2_pre_hash), std::begin(n_2_pre_hash) + crypto::AES256_KeySize,
+            std::back_inserter(key));
   iv.clear();
-  std::copy_n(std::begin(n_2_pre_hash) + crypto::AES256_KeySize, crypto::AES256_IVSize,
-              std::back_inserter(iv));
+  std::copy(std::begin(n_2_pre_hash) + crypto::AES256_KeySize,
+            std::begin(n_2_pre_hash) + crypto::AES256_KeySize + crypto::AES256_IVSize,
+            std::back_inserter(iv));
   // pad
   assert(kPadSize ==
              (2 * crypto::SHA512::DIGESTSIZE) + crypto::SHA512::DIGESTSIZE -

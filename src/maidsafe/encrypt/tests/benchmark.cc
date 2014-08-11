@@ -38,7 +38,7 @@ class Benchmark : public EncryptTestBase, public testing::TestWithParam<uint32_t
   typedef std::chrono::time_point<std::chrono::high_resolution_clock> chrono_time_point;
 
   Benchmark()
-      : EncryptTestBase(0),
+      : EncryptTestBase(),
         kTestDataSize_(1024 * 1024 * 20),
         kPieceSize_(GetParam() ? GetParam() : kTestDataSize_) {
     original_.reset(new char[kTestDataSize_]);

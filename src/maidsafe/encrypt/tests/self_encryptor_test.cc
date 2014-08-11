@@ -263,28 +263,32 @@ class EncryptTest : public EncryptTestBase, public testing::TestWithParam<uint32
     std::string content(RandomString(kDataSize_));
     std::copy(content.data(), content.data() + kDataSize_, original_.get());
     memset(decrypted_.get(), 1, kDataSize_);
+    self_encryptor_->Close();
     self_encryptor_.reset(new SelfEncryptor(data_map_, local_store_, get_from_store_));
   }
   virtual void TearDown() override { EXPECT_NO_THROW(self_encryptor_->Close()); }
   const uint32_t kDataSize_;
 };
 
-class SingleBytesTest : public EncryptTest {};
+class SingleBytesTest : public EncryptTest {
+ public:
+  SingleBytesTest() : EncryptTest() {}
+};
 
 TEST_P(SingleBytesTest, BEH_WriteInOrder) {
-    EXPECT_TRUE(self_encryptor_->Write(&original_[0], 1, 0));
+  EXPECT_TRUE(self_encryptor_->Write(&original_[0], 1, 0));
   for (uint32_t i = 0; i < kDataSize_; ++i)
     EXPECT_TRUE(self_encryptor_->Write(&original_[i], 1, i));
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
   for (uint32_t i = 0; i < kDataSize_; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 
-  self_encryptor_->Close();
   memset(decrypted_.get(), 1, kDataSize_);
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
   for (uint32_t i = 0; i < kDataSize_; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 
+  self_encryptor_->Close();
   self_encryptor_.reset(new SelfEncryptor(data_map_, local_store_, get_from_store_));
   memset(decrypted_.get(), 1, kDataSize_);
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
@@ -296,7 +300,8 @@ TEST_P(SingleBytesTest, BEH_WriteAlternatingBytes) {
   for (uint32_t i = 0; i < kDataSize_; i += 2)
     EXPECT_TRUE(self_encryptor_->Write(&original_[i], 1, i));
   memset(decrypted_.get(), 1, kDataSize_);
-  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
+  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_ - 1, 0));
+  EXPECT_FALSE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
   for (uint32_t i = 0; i < kDataSize_; ++i) {
     if (i % 2 == 0)
       ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
@@ -311,12 +316,12 @@ TEST_P(SingleBytesTest, BEH_WriteAlternatingBytes) {
   for (uint32_t i = 0; i < kDataSize_; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 
-  self_encryptor_->Close();
   memset(decrypted_.get(), 1, kDataSize_);
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
   for (uint32_t i = 0; i < kDataSize_; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 
+  self_encryptor_->Close();
   self_encryptor_.reset(new SelfEncryptor(data_map_, local_store_, get_from_store_));
   memset(decrypted_.get(), 1, kDataSize_);
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
@@ -346,13 +351,13 @@ TEST_P(SmallSingleBytesTest, BEH_WriteRandomOrder) {
   for (uint32_t i = 0; i != kDataSize_; ++i)
     EXPECT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 
-  self_encryptor_->Close();
   memset(decrypted_.get(), 1, kDataSize_);
 
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
   for (uint32_t i = 0; i < kDataSize_; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 
+  self_encryptor_->Close();
   self_encryptor_.reset(new SelfEncryptor(data_map_, local_store_, get_from_store_));
   memset(decrypted_.get(), 1, kDataSize_);
 

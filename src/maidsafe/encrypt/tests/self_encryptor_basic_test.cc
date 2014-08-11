@@ -41,9 +41,9 @@ namespace encrypt {
 
 namespace test {
 
-class EncryptTest : public testing::Test {
+class EncryptBasicTest : public testing::Test {
  public:
-  EncryptTest()
+   EncryptBasicTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
                      [](const std::string& name, const NonEmptyString&) {
@@ -57,7 +57,7 @@ class EncryptTest : public testing::Test {
         original_(),
         decrypted_() {}
 
-  virtual ~EncryptTest() = default;
+  virtual ~EncryptBasicTest() = default;
 
  protected:
   maidsafe::test::TestPath test_dir_;
@@ -69,7 +69,7 @@ class EncryptTest : public testing::Test {
   std::unique_ptr<char[]> original_, decrypted_;
 };
 
-TEST_F(EncryptTest, BEH_SMallfileContentOnly) {
+TEST_F(EncryptBasicTest, BEH_SMallfileContentOnly) {
   auto size(1024);
   std::string temp(RandomString(size));
   std::string result;
@@ -88,7 +88,7 @@ TEST_F(EncryptTest, BEH_SMallfileContentOnly) {
   EXPECT_EQ(result, temp);
 }
 
-TEST_F(EncryptTest, BEH_LargeFileWithLargeGap) {
+TEST_F(EncryptBasicTest, BEH_LargeFileWithLargeGap) {
   auto size(5 * 1024 * 1024);
   std::string temp(RandomString(size));
   std::string result;

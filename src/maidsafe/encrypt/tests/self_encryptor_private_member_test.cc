@@ -178,7 +178,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersMaxChunksPlus1) {
 }
 
 TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3andaHalfMaxChunks) {
-  SetEncryptorSize(kMaxChunkSize * 3.5);
+  SetEncryptorSize((kMaxChunkSize * 7) / 2);
   EXPECT_EQ(GetNumChunks(), 4);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
   EXPECT_EQ(GetChunkSize(1), kMaxChunkSize);
