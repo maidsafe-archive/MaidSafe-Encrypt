@@ -71,29 +71,27 @@ DataMap DecryptUsingVersion0(const Identity& parent_id, const Identity& this_id,
   }
 
   size_t inputs_size(parent_id.string().size() + this_id.string().size());
-  byte* enc_hash = new byte[crypto::SHA512::DIGESTSIZE];
-  byte* xor_hash = new byte[crypto::SHA512::DIGESTSIZE];
-  on_scope_exit([=] {
-    delete enc_hash;
-    delete xor_hash;
-  });
+  ByteVector enc_hash(crypto::SHA512::DIGESTSIZE);
+  ByteVector xor_hash(crypto::SHA512::DIGESTSIZE);
+  
   CryptoPP::SHA512().CalculateDigest(
-      enc_hash, reinterpret_cast<const byte*>((parent_id.string() + this_id.string()).data()),
+      &enc_hash.data()[0], reinterpret_cast<const byte*>((parent_id.string() + this_id.string()).data()),
       inputs_size);
   CryptoPP::SHA512().CalculateDigest(
-      xor_hash, reinterpret_cast<const byte*>((this_id.string() + parent_id.string()).data()),
+      &xor_hash.data()[0], reinterpret_cast<const byte*>((this_id.string() + parent_id.string()).data()),
       inputs_size);
 
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(enc_hash, crypto::AES256_KeySize,
-                                                          enc_hash + crypto::AES256_KeySize);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(&enc_hash.data()[0], crypto::AES256_KeySize,
+                                                          &enc_hash.data()[crypto::AES256_KeySize]);
 
   std::string serialised_data_map;
+
   CryptoPP::StringSource filter(
       protobuf_encrypted_data_map.contents(), true,
       new XORFilter(
           new CryptoPP::StreamTransformationFilter(
-              decryptor, new CryptoPP::Gunzip(new CryptoPP::StringSink(serialised_data_map))),
-          xor_hash, crypto::SHA512::DIGESTSIZE));
+              decryptor, new CryptoPP::StringSink(serialised_data_map)),
+          &xor_hash.data()[0], crypto::SHA512::DIGESTSIZE));
 
   DataMap data_map;
   ParseDataMap(serialised_data_map, data_map);
@@ -109,39 +107,31 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& thi
 
   std::string serialised_data_map;
   SerialiseDataMap(data_map, serialised_data_map);
-
-  ByteVector array_data_map(serialised_data_map.data(),
-                            serialised_data_map.data() + serialised_data_map.size());
-
+  ByteVector ser_data_map(std::begin(serialised_data_map), std::end(serialised_data_map));
   size_t inputs_size(parent_id.string().size() + this_id.string().size());
-  byte* enc_hash = new byte[crypto::SHA512::DIGESTSIZE];
-  byte* xor_hash = new byte[crypto::SHA512::DIGESTSIZE];
-  on_scope_exit([=] {
-    delete[] enc_hash;
-    delete[] xor_hash;
-  });
-
+  ByteVector enc_hash(crypto::SHA512::DIGESTSIZE);
+  ByteVector xor_hash(crypto::SHA512::DIGESTSIZE);
+  
   CryptoPP::SHA512().CalculateDigest(
-      enc_hash, reinterpret_cast<const byte*>((parent_id.string() + this_id.string()).data()),
+      &enc_hash.data()[0], reinterpret_cast<const byte*>((parent_id.string() + this_id.string()).data()),
       inputs_size);
   CryptoPP::SHA512().CalculateDigest(
-      xor_hash, reinterpret_cast<const byte*>((this_id.string() + parent_id.string()).data()),
+      &xor_hash.data()[0], reinterpret_cast<const byte*>((this_id.string() + parent_id.string()).data()),
       inputs_size);
 
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(enc_hash, crypto::AES256_KeySize,
-                                                          enc_hash + crypto::AES256_KeySize);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(&enc_hash.data()[0], crypto::AES256_KeySize,
+                                                          &enc_hash.data()[crypto::AES256_KeySize]);
 
   protobuf::EncryptedDataMap protobuf_encrypted_data_map;
   protobuf_encrypted_data_map.set_data_map_encryption_version(
       static_cast<uint32_t>(kDataMapEncryptionVersion));
-  CryptoPP::Gzip aes_filter(
-      new CryptoPP::StreamTransformationFilter(
+  CryptoPP::StreamTransformationFilter aes_filter(
           encryptor,
           new XORFilter(new CryptoPP::StringSink(*protobuf_encrypted_data_map.mutable_contents()),
-                        xor_hash, crypto::SHA512::DIGESTSIZE)),
-      1);
-  aes_filter.Put2(reinterpret_cast<const byte*>(&serialised_data_map.data()[0]),
-                  serialised_data_map.size(), -1, true);
+                        &xor_hash.data()[0], crypto::SHA512::DIGESTSIZE)
+    );
+aes_filter.Put2(&ser_data_map.data()[0],
+                  ser_data_map.size(), -1, true);
 
   assert(!protobuf_encrypted_data_map.contents().empty());
 

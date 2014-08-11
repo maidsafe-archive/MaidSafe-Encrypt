@@ -61,7 +61,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
                              std::function<NonEmptyString(const std::string&)> get_from_store)
     : data_map_(data_map),
       kOriginalDataMap_(data_map),
-      sequencer_(kMaxChunkSize * 5),
+      sequencer_(kMaxChunkSize * 3),  // space for  min first 3 chunks 
       chunks_(),
       buffer_(buffer),
       get_from_store_(get_from_store),
@@ -131,11 +131,11 @@ bool SelfEncryptor::Truncate(uint64_t position) {
   SCOPED_PROFILE
 
   auto old_size = file_size_;
-  file_size_ = position;
+  file_size_ = position;  //  All helper methods calculate from file size
   if (position < old_size) {
     for (auto& t : chunks_)
       if (t.first > position)
-        chunks_.erase(chunks_.find(t.first));
+        chunks_.erase(chunks_.find(t.first));  // this is the only erase on chunks_
   } else {
     assert(position - old_size < std::numeric_limits<uint32_t>::max());
     PrepareWindow(static_cast<uint32_t>(position - old_size), old_size, true);
@@ -153,7 +153,7 @@ bool SelfEncryptor::Flush() {
 
 void SelfEncryptor::Close() {
   if (closed_)
-    return;
+    return;  // can call close multiple times, safely
   on_scope_exit ose([this] { CleanUpAfterException(); });
   SCOPED_PROFILE
 
@@ -221,7 +221,6 @@ void SelfEncryptor::Close() {
   ose.Release();
   closed_ = true;
 }
-
 
 //##############################Private######################
 
@@ -339,6 +338,7 @@ void SelfEncryptor::GetPadIvKey(uint32_t chunk_number, ByteVector& key, ByteVect
   assert(n_1_pre_hash.size() == crypto::SHA512::DIGESTSIZE);
   assert(n_2_pre_hash.size() == crypto::SHA512::DIGESTSIZE);
   key.clear();
+  // cannot use copy_n as there is an apparent bug in MSVC 2013 :-(
   std::copy(std::begin(n_2_pre_hash), std::begin(n_2_pre_hash) + crypto::AES256_KeySize,
             std::back_inserter(key));
   iv.clear();
@@ -403,16 +403,10 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_
   CryptoPP::StringSource(chunk_content, true,
                          new CryptoPP::HashFilter(hash, new CryptoPP::StringSink(result)));
 
-
-  try {
-    std::lock_guard<std::mutex> guard(data_mutex_);
-    buffer_.Store(result, NonEmptyString(chunk_content));
-  }
-  catch (const std::exception& e) {
-    LOG(kError) << e.what() << "Could not store " << Base64Substr(result);
-    LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    throw;
-  }
+  {
+  std::lock_guard<std::mutex> guard(data_mutex_);
+  buffer_.Store(result, NonEmptyString(chunk_content));
+}
   chunk_n_itr->second = ChunkStatus::stored;
   {
     std::lock_guard<std::mutex> guard(data_mutex_);
@@ -423,22 +417,6 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_
 
     data_map_.chunks[chunk_number].size = length;  // keep pre-compressed length
     data_map_.chunks[chunk_number].storage_state = ChunkDetails::kPending;
-  }
-}
-
-void SelfEncryptor::DeleteChunk(uint32_t chunk_num) {
-  SCOPED_PROFILE
-  std::lock_guard<std::mutex> data_guard(data_mutex_);
-  if (data_map_.chunks[chunk_num].hash.empty())
-    return;
-
-  try {
-    buffer_.Delete(std::string(std::begin(data_map_.chunks[chunk_num].hash),
-                               std::end(data_map_.chunks[chunk_num].hash)));
-  }
-  catch (std::exception& e) {
-    LOG(kInfo) << boost::current_exception_diagnostic_information(true);
-    throw(e);
   }
 }
 
@@ -530,7 +508,6 @@ uint32_t SelfEncryptor::GetChunkNumber(uint64_t position) const {
   else
     return static_cast<uint32_t>(position / GetChunkSize(0)) + 1;
 }
-
 
 }  // namespace encrypt
 

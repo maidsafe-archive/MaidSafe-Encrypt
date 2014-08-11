@@ -252,9 +252,7 @@ INSTANTIATE_TEST_CASE_P(LargeFile, BasicOffsetTest,
 
 class EncryptTest : public EncryptTestBase, public testing::TestWithParam<uint32_t> {
  public:
-  EncryptTest()
-      : EncryptTestBase(),
-        kDataSize_(GetParam()) {
+  EncryptTest() : EncryptTestBase(), kDataSize_(GetParam()) {
     original_.reset(new char[kDataSize_]);
     decrypted_.reset(new char[kDataSize_]);
   }
@@ -301,7 +299,7 @@ TEST_P(SingleBytesTest, BEH_WriteAlternatingBytes) {
     EXPECT_TRUE(self_encryptor_->Write(&original_[i], 1, i));
   memset(decrypted_.get(), 1, kDataSize_);
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_ - 1, 0));
-  for (uint32_t i = 0; i < kDataSize_ -1; ++i) {
+  for (uint32_t i = 0; i < kDataSize_ - 1; ++i) {
     if (i % 2 == 0)
       ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
     else
@@ -311,20 +309,20 @@ TEST_P(SingleBytesTest, BEH_WriteAlternatingBytes) {
   for (uint32_t i = 1; i < kDataSize_; i += 2)
     EXPECT_TRUE(self_encryptor_->Write(&original_[i], 1, i));
   memset(decrypted_.get(), 1, kDataSize_);
-  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_ -1, 0));
-  for (uint32_t i = 0; i < kDataSize_ -1; ++i)
+  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_ - 1, 0));
+  for (uint32_t i = 0; i < kDataSize_ - 1; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 
   memset(decrypted_.get(), 1, kDataSize_);
-  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_ -1, 0));
-  for (uint32_t i = 0; i < kDataSize_ -1; ++i)
+  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_ - 1, 0));
+  for (uint32_t i = 0; i < kDataSize_ - 1; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 
   self_encryptor_->Close();
   self_encryptor_.reset(new SelfEncryptor(data_map_, local_store_, get_from_store_));
   memset(decrypted_.get(), 1, kDataSize_);
-  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_ -1, 0));
-  for (uint32_t i = 0; i < kDataSize_ -1; ++i)
+  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_ - 1, 0));
+  for (uint32_t i = 0; i < kDataSize_ - 1; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
 }
 
@@ -413,9 +411,7 @@ INSTANTIATE_TEST_CASE_P(Reading, InProcessTest,
 class BasicTest : public EncryptTestBase, public testing::Test {
  public:
   BasicTest()
-      : EncryptTestBase(),
-        kDataSize_(1024 * 1024 * 20),
-        content_(RandomString(kDataSize_)) {
+      : EncryptTestBase(), kDataSize_(1024 * 1024 * 20), content_(RandomString(kDataSize_)) {
     original_.reset(new char[kDataSize_]);
     decrypted_.reset(new char[kDataSize_]);
   }
@@ -425,9 +421,7 @@ class BasicTest : public EncryptTestBase, public testing::Test {
     std::copy(content_.data(), content_.data() + kDataSize_, original_.get());
     memset(decrypted_.get(), 1, kDataSize_);
   }
-  virtual void TearDown() override {
-    self_encryptor_->Close();
-  }
+  virtual void TearDown() override { self_encryptor_->Close(); }
   const uint32_t kDataSize_;
   std::string content_;
 };
@@ -1061,7 +1055,7 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
 
   // EXPECT_NO_THROW(self_encryptor_->Close());
   // Prehash checks
-  // TODO - check validity of this test now as algorithm slightly different 
+  // TODO - check validity of this test now as algorithm slightly different
   // for (uint32_t i = 0; i != num_chunks - 1; ++i) {
   //   for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
   //     EXPECT_EQ(prehash[j], self_encryptor_->data_map().chunks[i].pre_hash[j])
@@ -1095,7 +1089,9 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
   const uint32_t kTestDataSize(kMaxChunkSize * 12);
-  const uint32_t kIncrease((RandomUint32() % 4000) + 95);
+  uint32_t kIncrease((RandomUint32() % 4000) + 95);
+  if (kIncrease == 100)
+    ++kIncrease;  // otherwise div by zero a few lines further down
   {
     SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
     boost::scoped_array<char> plain_data(new char[kTestDataSize]);
@@ -1109,7 +1105,6 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
     }
 
     EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize + kIncrease));
-
     const uint32_t kReadLength((RandomUint32() % (kIncrease - 100)) + 100);
     boost::scoped_array<char> answer(new char[kReadLength]);
     memset(answer.get(), 1, kReadLength);
@@ -1127,14 +1122,16 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
       }
     }
   }
- // TODO - this test passes, but only in first run if gtest repeat is on!!! commented out until this gtest issues is found and resolved
+  // TODO - this test passes, but only in first run if gtest repeat is on!!! commented out until
+  // this gtest issues is found and resolved
   // SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
   // EXPECT_EQ(kTestDataSize + kIncrease, temp_self_encryptor.size());
   // EXPECT_NO_THROW(temp_self_encryptor.Close());
 }
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
-// TODO - figure out what scenario1 and 2 is and rename these tests and understand this one in particular
+  // TODO - figure out what scenario1 and 2 is and rename these tests and understand this one in
+  // particular
   const size_t kTestDataSize(kMaxChunkSize * 40);
   {
     SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
@@ -1278,7 +1275,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
             // the current data lenth of the encrypt stream.
             // It shall return false if the starting
             // read position exceed the data size
-            if (read_position + read_length < self_encryptor_->size()) {
+            if (read_position + read_length <= self_encryptor_->size()) {
               EXPECT_TRUE(self_encryptor_->Read(answer.get(), read_length, read_position));
               // A return value of num_of_bytes succeeded read is required
               for (size_t i = 0; i < read_length; ++i) {

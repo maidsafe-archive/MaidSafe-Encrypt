@@ -63,9 +63,7 @@ const int g_num_procs(Concurrency());
 class EncryptDataMapTest : public EncryptTestBase, public testing::Test {
  public:
   EncryptDataMapTest()
-      : EncryptTestBase(),
-        kDataSize_(1024 * 1024 * 20),
-        content_(RandomString(kDataSize_)) {
+      : EncryptTestBase(), kDataSize_(1024 * 1024 * 20), content_(RandomString(kDataSize_)) {
     original_.reset(new char[kDataSize_]);
     decrypted_.reset(new char[kDataSize_]);
   }
@@ -80,27 +78,40 @@ class EncryptDataMapTest : public EncryptTestBase, public testing::Test {
 };
 
 
+TEST_F(EncryptDataMapTest, BEH_SerialiseParseDataMap) {
+  EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
+  EXPECT_NO_THROW(self_encryptor_->Close());
+
+  std::string serialised_data_map;
+  SerialiseDataMap(data_map_, serialised_data_map);
+   
+  DataMap new_data_map;
+  ParseDataMap(serialised_data_map, new_data_map);
+
+  SelfEncryptor self_encryptor(new_data_map, local_store_, get_from_store_);
+  EXPECT_TRUE(self_encryptor.Read(&decrypted_[0], kDataSize_, 0));
+  EXPECT_NO_THROW(self_encryptor.Close());
+  for(uint32_t i(0); i < kDataSize_; ++i)
+    EXPECT_EQ(decrypted_[i], original_[i]);
+}
+
 TEST_F(EncryptDataMapTest, BEH_EncryptDecryptDataMap) {
   // TODO(Fraser#5#): 2012-01-05 - Test failure cases also.
   EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
-  EXPECT_TRUE(self_encryptor_->Flush());
+  EXPECT_NO_THROW(self_encryptor_->Close());
   const Identity kParentId(RandomString(64)), kThisId(RandomString(64));
 
   asymm::CipherText encrypted_data_map = EncryptDataMap(kParentId, kThisId, data_map_);
   EXPECT_FALSE(encrypted_data_map.string().empty());
 
   DataMap retrieved_data_map(DecryptDataMap(kParentId, kThisId, encrypted_data_map.string()));
+  
+  SelfEncryptor self_encryptor(retrieved_data_map, local_store_, get_from_store_);
+  EXPECT_TRUE(self_encryptor.Read(&decrypted_[0], kDataSize_, 0));
+  EXPECT_NO_THROW(self_encryptor.Close());
   ASSERT_EQ(data_map_.chunks.size(), retrieved_data_map.chunks.size());
-  auto original_itr(data_map_.chunks.begin()), retrieved_itr(retrieved_data_map.chunks.begin());
-  std::string original_pre_hash(64, 0), retrieved_pre_hash(64, 0);
-  for (; original_itr != data_map_.chunks.end(); ++original_itr, ++retrieved_itr) {
-    ASSERT_EQ((*original_itr).hash, (*retrieved_itr).hash);
-    memcpy(&original_pre_hash[0], &(*original_itr).pre_hash, 64);
-    memcpy(&retrieved_pre_hash[0], &(*retrieved_itr).pre_hash, 64);
-    ASSERT_EQ(original_pre_hash, retrieved_pre_hash);
-    ASSERT_EQ((*original_itr).size, (*retrieved_itr).size);
-  }
-  EXPECT_NO_THROW(self_encryptor_->Close());
+  for(uint32_t i(0); i < kDataSize_; ++i)
+    EXPECT_EQ(decrypted_[i], original_[i]);
 }
 
 TEST_F(EncryptDataMapTest, BEH_DifferentDataMapSameChunk) {
@@ -118,6 +129,7 @@ TEST_F(EncryptDataMapTest, BEH_DifferentDataMapSameChunk) {
     result_data.reset(new char[16 * 1024]);
     SelfEncryptor self_encryptor_2(data_map_2, local_store_, get_from_store_);
     self_encryptor_2.Read(result_data.get(), 16 * 1024, 0);
+    self_encryptor_2.Close();
     for (uint32_t i = 0; i != 16 * 1024; ++i)
       ASSERT_EQ(original_[i], result_data[i]) << "i == " << i;
   }
