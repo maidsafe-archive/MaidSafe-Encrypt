@@ -263,6 +263,7 @@ class EncryptTest : public EncryptTestBase, public testing::TestWithParam<uint32
     std::string content(RandomString(kDataSize_));
     std::copy(content.data(), content.data() + kDataSize_, original_.get());
     memset(decrypted_.get(), 1, kDataSize_);
+    self_encryptor_.reset(new SelfEncryptor(data_map_, local_store_, get_from_store_));
   }
   virtual void TearDown() override { EXPECT_NO_THROW(self_encryptor_->Close()); }
   const uint32_t kDataSize_;
