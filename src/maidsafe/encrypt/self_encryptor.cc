@@ -65,7 +65,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
       chunks_(),
       buffer_(buffer),
       get_from_store_(get_from_store),
-      file_size_(0),
+      file_size_(data_map.size()),
       closed_(false),
       data_mutex_() {
   if (!get_from_store) {
@@ -74,7 +74,6 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
   }
   auto pos(0);
   if (!data_map_.chunks.empty()) {
-    file_size_ = data_map_.size();
     assert(data_map_.chunks.size() >= 3);
     for (uint32_t i(0); i < data_map_.chunks.size(); ++i)
       chunks_.insert(std::make_pair(i, ChunkStatus::remote));
@@ -89,7 +88,6 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
     for (const auto& t : data_map_.content)
       sequencer_[pos++] = t;
     chunks_.insert(std::make_pair(0, ChunkStatus::stored));
-    file_size_ = data_map_.size();
   }
 }
 
@@ -114,10 +112,10 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
 bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   if (closed_)
     BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::encryptor_closed));
+  if((position + length) > file_size_)
+    return false;
   on_scope_exit ose([this] { CleanUpAfterException(); });
   SCOPED_PROFILE
-  file_size_ = std::max(file_size_, length + position);
-
   PrepareWindow(length, position, false);
   for (uint32_t i(0); i < length; ++i)
     data[i] = sequencer_[position + i];
@@ -130,9 +128,14 @@ bool SelfEncryptor::Truncate(uint64_t position) {
     BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::encryptor_closed));
   on_scope_exit ose([this] { CleanUpAfterException(); });
   SCOPED_PROFILE
-    if (position > file_size_)
-      PrepareWindow(position - file_size_, file_size_, true);
+    if (position < file_size_) {
+      for(auto& t: chunks_)
+        if (t.first > position)
+          chunks_.erase(chunks_.find(t.first));
+    } 
+  auto old_size = file_size_;
   file_size_ = position;
+  PrepareWindow(file_size_ - old_size, old_size, true);
   ose.Release();
   return true;
 }
@@ -219,7 +222,7 @@ void SelfEncryptor::PrepareWindow(uint32_t length, uint64_t position, bool write
     return;
   auto first_chunk(GetChunkNumber(position));
   auto last_chunk(GetChunkNumber(position + length));
-  if (sequencer_.size() < (position + length)) {
+  if (write && (sequencer_.size() < (position + length))) {
     sequencer_.resize(position + length);
     assert(sequencer_.size() == (position + length) && "could not resize sequencer");
   }

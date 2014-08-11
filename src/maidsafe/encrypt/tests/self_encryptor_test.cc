@@ -1088,91 +1088,91 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
   // self_encryptor_->Close();
 }
 
-// TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
-//   // const uint32_t kTestDataSize(kMaxChunkSize * 12);
-//   // const uint32_t kIncrease((RandomUint32() % 4000) + 95);
-//   // {
-//   //   SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
-//   //   boost::scoped_array<char> plain_data(new char[kTestDataSize]);
-//   //   memset(plain_data.get(), 0, kTestDataSize);
-//   //
-//   //   const uint32_t kWriteLength(4096);
-//   //   for (uint32_t i = 0; i < kTestDataSize; i += kWriteLength) {
-//   //     std::string plain_text(RandomString(kWriteLength));
-//   //     memcpy(plain_data.get() + i, plain_text.c_str(), kWriteLength);
-//   //     EXPECT_TRUE(self_encryptor.Write(plain_text.c_str(), kWriteLength, i));
-//   //   }
-//   //
-//   //   EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize + kIncrease));
-//   //
-//   //   const uint32_t kReadLength((RandomUint32() % (kIncrease - 100)) + 100);
-//   //   boost::scoped_array<char> answer(new char[kReadLength]);
-//   //   memset(answer.get(), 1, kReadLength);
-//   //   EXPECT_TRUE(self_encryptor.Read(answer.get(), kReadLength, 0));
-//   //   //TODO check validity  EXPECT_EQ(kTestDataSize + kIncrease, self_encryptor.size());
-//   //   ASSERT_LE(kReadLength, self_encryptor.size());
-//   //   EXPECT_NO_THROW(self_encryptor.Close());
-//   //   for (uint32_t i = 0; i < kReadLength; ++i) {
-//   //     if (i < kTestDataSize) {
-//   //       ASSERT_EQ(plain_data[i], answer[i]) << "not match " << i << " from " << kReadLength
-//   //                                           << " when total data is " << self_encryptor.size();
-//   //     } else {
-//   //       ASSERT_EQ(0, answer[i]) << "not match " << i << " from " << kReadLength
-//   //                               << " when total data is " << self_encryptor.size();
-//   //     }
-//   //   }
-//   // }
-//   // SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
-//   // EXPECT_EQ(kTestDataSize + kIncrease, temp_self_encryptor.size());
-//   // EXPECT_NO_THROW(temp_self_encryptor.Close());
-// }
-//
-// TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
-// // TODO - figure out what scenario1 and 2 is and rename these tests and understand this one in particular
-//   // const size_t kTestDataSize(kMaxChunkSize * 40);
-//   // {
-//   //   SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
-//   //   EXPECT_TRUE(self_encryptor.Truncate(100));
-//   //   EXPECT_EQ(100, self_encryptor.size());
-//   //
-//   //   boost::scoped_array<char> plain_data(new char[kTestDataSize]);
-//   //   memset(plain_data.get(), 0, kTestDataSize);
-//   //
-//   //   EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize));
-//   //
-//   //   uint32_t write_length(4096);
-//   //   uint32_t file_size(0);
-//   //   for (uint32_t i = 0; i < (kMaxChunkSize * 3); i += write_length) {
-//   //     uint32_t write_position(i);
-//   //     std::string plain_text(RandomString(write_length));
-//   //     boost::scoped_array<char> content_data(new char[write_length]);
-//   //     for (uint32_t i = 0; i < write_length; ++i) {
-//   //       plain_data[i + write_position] = plain_text[i];
-//   //       content_data[i] = plain_text[i];
-//   //     }
-//   //
-//   //     EXPECT_TRUE(self_encryptor.Write(content_data.get(), write_length, write_position));
-//   //     file_size = std::max(file_size, write_position + write_length);
-//   //   }
-//   //
-//   //   EXPECT_EQ(kTestDataSize, self_encryptor.size());
-//   //
-//   //   EXPECT_NO_THROW(self_encryptor.Close());
-//   //   uint32_t read_position(0);
-//   //   uint32_t read_length(4096);
-//   //   boost::scoped_array<char> answer(new char[read_length]);
-//   //   EXPECT_TRUE(self_encryptor.Read(answer.get(), read_length, read_position));
-//   //   for (size_t i = 0; i < read_length; ++i)
-//   //     if ((i + read_position) < self_encryptor.size())
-//   //       ASSERT_EQ(plain_data[read_position + i], answer[i])
-//   //           << "not match " << i << " from " << read_position << " when total data is "
-//   //           << self_encryptor.size();
-//   // }
-//   //
-//   // SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
-//   // EXPECT_EQ(kTestDataSize, temp_self_encryptor.size());
-//   // EXPECT_NO_THROW(temp_self_encryptor.Close());
-// }
+TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
+  const uint32_t kTestDataSize(kMaxChunkSize * 12);
+  const uint32_t kIncrease((RandomUint32() % 4000) + 95);
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
+    boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+    memset(plain_data.get(), 0, kTestDataSize);
+
+    const uint32_t kWriteLength(4096);
+    for (uint32_t i = 0; i < kTestDataSize; i += kWriteLength) {
+      std::string plain_text(RandomString(kWriteLength));
+      memcpy(plain_data.get() + i, plain_text.c_str(), kWriteLength);
+      EXPECT_TRUE(self_encryptor.Write(plain_text.c_str(), kWriteLength, i));
+    }
+
+    EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize + kIncrease));
+
+    const uint32_t kReadLength((RandomUint32() % (kIncrease - 100)) + 100);
+    boost::scoped_array<char> answer(new char[kReadLength]);
+    memset(answer.get(), 1, kReadLength);
+    EXPECT_TRUE(self_encryptor.Read(answer.get(), kReadLength, 0));
+    //TODO check validity  EXPECT_EQ(kTestDataSize + kIncrease, self_encryptor.size());
+    ASSERT_LE(kReadLength, self_encryptor.size());
+    EXPECT_NO_THROW(self_encryptor.Close());
+    for (uint32_t i = 0; i < kReadLength; ++i) {
+      if (i < kTestDataSize) {
+        ASSERT_EQ(plain_data[i], answer[i]) << "not match " << i << " from " << kReadLength
+                                            << " when total data is " << self_encryptor.size();
+      } else {
+        ASSERT_EQ(0, answer[i]) << "not match " << i << " from " << kReadLength
+                                << " when total data is " << self_encryptor.size();
+      }
+    }
+  }
+  SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
+  EXPECT_EQ(kTestDataSize + kIncrease, temp_self_encryptor.size());
+  EXPECT_NO_THROW(temp_self_encryptor.Close());
+}
+
+TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
+// TODO - figure out what scenario1 and 2 is and rename these tests and understand this one in particular
+  const size_t kTestDataSize(kMaxChunkSize * 40);
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
+    EXPECT_TRUE(self_encryptor.Truncate(100));
+    EXPECT_EQ(100, self_encryptor.size());
+
+    boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+    memset(plain_data.get(), 0, kTestDataSize);
+
+    EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize));
+
+    uint32_t write_length(4096);
+    uint32_t file_size(0);
+    for (uint32_t i = 0; i < (kMaxChunkSize * 3); i += write_length) {
+      uint32_t write_position(i);
+      std::string plain_text(RandomString(write_length));
+      boost::scoped_array<char> content_data(new char[write_length]);
+      for (uint32_t i = 0; i < write_length; ++i) {
+        plain_data[i + write_position] = plain_text[i];
+        content_data[i] = plain_text[i];
+      }
+
+      EXPECT_TRUE(self_encryptor.Write(content_data.get(), write_length, write_position));
+      file_size = std::max(file_size, write_position + write_length);
+    }
+
+    EXPECT_EQ(kTestDataSize, self_encryptor.size());
+
+    uint32_t read_position(0);
+    uint32_t read_length(4096);
+    boost::scoped_array<char> answer(new char[read_length]);
+    EXPECT_TRUE(self_encryptor.Read(answer.get(), read_length, read_position));
+    EXPECT_NO_THROW(self_encryptor.Close());
+    for (size_t i = 0; i < read_length; ++i)
+      if ((i + read_position) < self_encryptor.size())
+        ASSERT_EQ(plain_data[read_position + i], answer[i])
+            << "not match " << i << " from " << read_position << " when total data is "
+            << self_encryptor.size();
+  }
+
+  SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
+  EXPECT_EQ(kTestDataSize, temp_self_encryptor.size());
+  EXPECT_NO_THROW(temp_self_encryptor.Close());
+}
 
 TEST_F(BasicTest, BEH_TruncateDecrease) {
   const size_t kTestDataSize(300);
