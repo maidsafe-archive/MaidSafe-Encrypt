@@ -98,13 +98,11 @@ bool SelfEncryptor::Write(const char* data, uint32_t length, uint64_t position) 
     BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::encryptor_closed));
   on_scope_exit ose([this] { CleanUpAfterException(); });
   SCOPED_PROFILE
-  ByteVector to_be_written(data, data + length);  // copy - inefficient
-  // read_cache_->Put(to_be_written, position);
 
   file_size_ = std::max(file_size_, length + position);
   PrepareWindow(length, position, true);
-  for (const auto& entry : to_be_written)
-    sequencer_[position++] = entry;  // direct as may be overwrite
+  for (uint32_t i(0); i < length; ++i)
+    sequencer_[position + i] = data[i];  // direct as may be overwrite
   ose.Release();
   return true;
 }
@@ -113,7 +111,10 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   if (closed_)
     BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::encryptor_closed));
   if ((position + length) > file_size_)
-    return false;
+    return false;  // This is unclear whether to allow the read and fill any unwritten parts with
+                   // zero if reading past EOF. Seems if a file is writtem past EOF then this shoudl
+                   // be OK, this object follows the pattern that a write past EOF is fine, any read
+                   // within that file will work, even on sparse files
   on_scope_exit ose([this] { CleanUpAfterException(); });
   SCOPED_PROFILE
   PrepareWindow(length, position, false);
@@ -225,10 +226,10 @@ void SelfEncryptor::Close() {
 //##############################Private######################
 
 void SelfEncryptor::PrepareWindow(uint32_t length, uint64_t position, bool write) {
-    if (sequencer_.size() < file_size_) {
+  if (sequencer_.size() < file_size_) {
     sequencer_.resize(file_size_);
     assert(sequencer_.size() == file_size_);
-    }
+  }
   if (file_size_ < (3 * kMinChunkSize))
     return;
   auto first_chunk(GetChunkNumber(position));
