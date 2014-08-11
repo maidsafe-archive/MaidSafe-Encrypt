@@ -28,14 +28,11 @@
 #include <vector>
 #include <deque>
 #include <map>
-#include "boost/numeric/ublas/vector_sparse.hpp"
-#include "boost/numeric/ublas/io.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/data_buffer.h"
 
 #include "maidsafe/encrypt/data_map.h"
-// #include "maidsafe/encrypt/config.h"
 
 namespace maidsafe {
 
@@ -78,7 +75,6 @@ class SelfEncryptor {
   void GetPadIvKey(uint32_t this_chunk_num, ByteVector& key, ByteVector& iv, ByteVector& pad);
   // Encrypts the chunk and stores in chunk_store_
   void EncryptChunk(uint32_t chunk_num, ByteVector data, uint32_t length);
-  void DeleteChunk(uint32_t chunk_num);
   void CleanUpAfterException() {
     std::swap(data_map_, kOriginalDataMap_);
     assert(false && "cleaned up after exception");
@@ -102,7 +98,6 @@ class SelfEncryptor {
   };
 
   DataMap& data_map_, kOriginalDataMap_;
-  // boost::numeric::ublas::compressed_vector<byte> sequencer_;
   std::vector<byte> sequencer_;
   std::map<uint32_t, ChunkStatus> chunks_;
   DataBuffer<std::string>& buffer_;

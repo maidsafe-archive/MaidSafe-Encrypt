@@ -16,10 +16,12 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include <thread>
+#include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <random>
 #include <string>
+#include <thread>
 
 #ifdef WIN32
 #pragma warning(push, 1)
@@ -337,8 +339,9 @@ TEST_P(SmallSingleBytesTest, BEH_WriteRandomOrder) {
   std::vector<int> indices(kDataSize_);
   for (uint32_t i = 0; i < kDataSize_; ++i)
     indices[i] = i;
-  srand(RandomUint32());
-  std::random_shuffle(indices.begin(), indices.end());
+
+  std::mt19937 rng(RandomUint32());
+  std::shuffle(indices.begin(), indices.end(), rng);
 
   for (uint32_t i = 0; i < kDataSize_; ++i)
     EXPECT_TRUE(self_encryptor_->Write(&original_[indices[i]], 1, indices[i]));
@@ -502,8 +505,10 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
   }
 
   uint64_t last_piece((*broken_data.rbegin()).first);
-  srand(RandomUint32());
-  std::random_shuffle(broken_data.begin(), broken_data.end());
+
+  std::mt19937 rng(RandomUint32());
+  std::shuffle(broken_data.begin(), broken_data.end(), rng);
+
   auto overlap_itr(broken_data.rbegin());
   if ((*overlap_itr).first == last_piece)
     ++overlap_itr;
@@ -560,8 +565,8 @@ TEST_F(BasicTest, FUNC_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
     string_array[i].assign(original_.get() + offset, size);
     index_array[i] = i;
   }
-  srand(RandomUint32());
-  std::random_shuffle(index_array.begin(), index_array.end());
+  std::mt19937 rng(RandomUint32());
+  std::shuffle(index_array.begin(), index_array.end(), rng);
 
   // Clear original_ ready to take modified input data.
   memset(original_.get(), 0, kDataSize_);
@@ -688,10 +693,10 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
     string_array[i] = RandomString(kSize);
     index_array[i] = i;
   }
-  srand(RandomUint32());
-  std::random_shuffle(index_array.begin(), index_array.end());
+  std::mt19937 rng(RandomUint32());
+  std::shuffle(index_array.begin(), index_array.end(), rng);
   while (index_array[kGapIndex] == kParts - 1)
-    std::random_shuffle(index_array.begin(), index_array.end());
+    std::shuffle(index_array.begin(), index_array.end(), rng);
   std::string::iterator it(compare.begin());
 
   for (size_t i = 0; i != kGapIndex; ++i) {
