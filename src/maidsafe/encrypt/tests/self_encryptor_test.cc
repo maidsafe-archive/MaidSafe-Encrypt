@@ -1113,17 +1113,19 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
     const uint32_t kReadLength((RandomUint32() % (kIncrease - 100)) + 100);
     boost::scoped_array<char> answer(new char[kReadLength]);
     memset(answer.get(), 1, kReadLength);
-    EXPECT_TRUE(self_encryptor.Read(answer.get(), kReadLength, 0));
-    EXPECT_EQ(kTestDataSize + kIncrease, self_encryptor.size());
-    ASSERT_LE(kReadLength, self_encryptor.size());
-    EXPECT_NO_THROW(self_encryptor.Close());
-    for (uint32_t i = 0; i < kReadLength; ++i) {
-      if (i < kTestDataSize) {
-        ASSERT_EQ(plain_data[i], answer[i]) << "not match " << i << " from " << kReadLength
-                                            << " when total data is " << self_encryptor.size();
-      } else {
-        ASSERT_EQ(0, answer[i]) << "not match " << i << " from " << kReadLength
-                                << " when total data is " << self_encryptor.size();
+    if (kReadLength < self_encryptor.size()) {
+      EXPECT_TRUE(self_encryptor.Read(answer.get(), kReadLength, 0));
+      EXPECT_EQ(kTestDataSize + kIncrease, self_encryptor.size());
+      ASSERT_LE(kReadLength, self_encryptor.size());
+      EXPECT_NO_THROW(self_encryptor.Close());
+      for (uint32_t i = 0; i < kReadLength; ++i) {
+        if (i < kTestDataSize) {
+          ASSERT_EQ(plain_data[i], answer[i]) << "not match " << i << " from " << kReadLength
+                                              << " when total data is " << self_encryptor.size();
+        } else {
+          ASSERT_EQ(0, answer[i]) << "not match " << i << " from " << kReadLength
+                                  << " when total data is " << self_encryptor.size();
+        }
       }
     }
   }
