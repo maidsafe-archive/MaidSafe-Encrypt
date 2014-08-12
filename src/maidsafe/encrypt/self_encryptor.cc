@@ -404,12 +404,12 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_
   CryptoPP::StringSource(chunk_content, true,
                          new CryptoPP::HashFilter(hash, new CryptoPP::StringSink(result)));
 
-  {
-  std::lock_guard<std::mutex> guard(data_mutex_);
   buffer_.Store(result, NonEmptyString(chunk_content));
-  chunk_n_itr->second = ChunkStatus::stored;
+  {
+    std::lock_guard<std::mutex> guard(data_mutex_);
     ByteVector tmp2(std::begin(result), std::end(result));
     std::swap(data_map_.chunks[chunk_number].hash, tmp2);
+    chunk_n_itr->second = ChunkStatus::stored;
     assert(crypto::SHA512::DIGESTSIZE == data_map_.chunks[chunk_number].hash.size() &&
            "Hash size wrong");
 
