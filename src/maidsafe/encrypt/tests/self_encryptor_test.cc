@@ -1094,9 +1094,9 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
   const uint32_t kTestDataSize(kMaxChunkSize * 12);
-  uint32_t kIncrease((RandomUint32() % 4000) + 95);
-  if (kIncrease == 100)
-    ++kIncrease;  // otherwise div by zero a few lines further down
+  uint32_t increase((RandomUint32() % 4000) + 95);
+  if (increase == 100)
+    ++increase;  // otherwise div by zero a few lines further down
   {
     SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
     boost::scoped_array<char> plain_data(new char[kTestDataSize]);
@@ -1109,13 +1109,13 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
       EXPECT_TRUE(self_encryptor.Write(plain_text.c_str(), kWriteLength, i));
     }
 
-    EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize + kIncrease));
-    const uint32_t kReadLength((RandomUint32() % (kIncrease - 100)) + 100);
+    EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize + increase));
+    const uint32_t kReadLength((RandomUint32() % (increase - 100)) + 100);
     boost::scoped_array<char> answer(new char[kReadLength]);
     memset(answer.get(), 1, kReadLength);
     if (kReadLength < self_encryptor.size()) {
       EXPECT_TRUE(self_encryptor.Read(answer.get(), kReadLength, 0));
-      EXPECT_EQ(kTestDataSize + kIncrease, self_encryptor.size());
+      EXPECT_EQ(kTestDataSize + increase, self_encryptor.size());
       ASSERT_LE(kReadLength, self_encryptor.size());
       EXPECT_NO_THROW(self_encryptor.Close());
       for (uint32_t i = 0; i < kReadLength; ++i) {
@@ -1129,11 +1129,9 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
       }
     }
   }
-  // TODO - this test passes, but only in first run if gtest repeat is on!!! commented out until
-  // this gtest issues is found and resolved
-  // SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
-  // EXPECT_EQ(kTestDataSize + kIncrease, temp_self_encryptor.size());
-  // EXPECT_NO_THROW(temp_self_encryptor.Close());
+  SelfEncryptor temp_self_encryptor(data_map_, local_store_, get_from_store_);
+  EXPECT_EQ(kTestDataSize + increase, temp_self_encryptor.size());
+  EXPECT_NO_THROW(temp_self_encryptor.Close());
 }
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {

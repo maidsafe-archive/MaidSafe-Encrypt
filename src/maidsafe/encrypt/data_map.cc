@@ -46,7 +46,8 @@ DataMap::DataMap(DataMap&& other) MAIDSAFE_NOEXCEPT
 uint64_t DataMap::size() const {
   return chunks.empty()
              ? content.size()
-             : static_cast<uint64_t>(chunks[0].size) * (chunks.size() - 1) + chunks.rbegin()->size;
+             : static_cast<uint64_t>(chunks[0].size) * (chunks.size() - 2) +
+               (++chunks.rbegin())->size + chunks.rbegin()->size;
 }
 
 bool DataMap::empty() const { return chunks.empty() && content.empty(); }
