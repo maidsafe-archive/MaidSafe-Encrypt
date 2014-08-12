@@ -75,7 +75,6 @@ TEST(CacheTest, BEH_PutInSequence) {
   ByteVector v(10000);
   std::generate(v.begin(), v.end(), [] {
     return static_cast<char>(RandomUint32());
-    ;
   });
   cache.Put(v, 0);
   ByteVector answer;
@@ -107,7 +106,6 @@ TEST(CacheTest, BEH_PutOutOfSequence) {
   cache.Put(v, 0);
   cache.Put(v2, offset);
   ByteVector answer1, answer2;
-  ;
   EXPECT_TRUE(cache.Get(answer1, static_cast<uint32_t>(v2.size()), offset))
       << "Unable to read from just written data";
   EXPECT_EQ(v, answer1) << "invalid data read from an offset";

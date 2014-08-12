@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <algorithm>
 #include "maidsafe/common/config.h"
 
 namespace maidsafe {

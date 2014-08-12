@@ -28,6 +28,7 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <utility>
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/data_buffer.h"
@@ -43,7 +44,6 @@ class PrivateSelfEncryptorTest;
 }
 
 class SelfEncryptor {
-
  public:
   SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
                 std::function<NonEmptyString(const std::string&)> get_from_store);
@@ -88,7 +88,7 @@ class SelfEncryptor {
   uint32_t GetNextChunkNumber(uint32_t chunk_number) const;      // not ++chunk_number
   uint32_t GetPreviousChunkNumber(uint32_t chunk_number) const;  // not --chunk_number
   uint32_t GetChunkNumber(uint64_t position) const;
-  //########end of helpers#########################################################
+  // ########end of helpers#########################################################
 
   enum class ChunkStatus {
     to_be_hashed,

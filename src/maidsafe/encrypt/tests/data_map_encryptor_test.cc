@@ -84,14 +84,14 @@ TEST_F(EncryptDataMapTest, BEH_SerialiseParseDataMap) {
 
   std::string serialised_data_map;
   SerialiseDataMap(data_map_, serialised_data_map);
-   
+
   DataMap new_data_map;
   ParseDataMap(serialised_data_map, new_data_map);
 
   SelfEncryptor self_encryptor(new_data_map, local_store_, get_from_store_);
   EXPECT_TRUE(self_encryptor.Read(&decrypted_[0], kDataSize_, 0));
   EXPECT_NO_THROW(self_encryptor.Close());
-  for(uint32_t i(0); i < kDataSize_; ++i)
+  for (uint32_t i(0); i < kDataSize_; ++i)
     EXPECT_EQ(decrypted_[i], original_[i]);
 }
 
@@ -105,12 +105,12 @@ TEST_F(EncryptDataMapTest, BEH_EncryptDecryptDataMap) {
   EXPECT_FALSE(encrypted_data_map.string().empty());
 
   DataMap retrieved_data_map(DecryptDataMap(kParentId, kThisId, encrypted_data_map.string()));
-  
+
   SelfEncryptor self_encryptor(retrieved_data_map, local_store_, get_from_store_);
   EXPECT_TRUE(self_encryptor.Read(&decrypted_[0], kDataSize_, 0));
   EXPECT_NO_THROW(self_encryptor.Close());
   ASSERT_EQ(data_map_.chunks.size(), retrieved_data_map.chunks.size());
-  for(uint32_t i(0); i < kDataSize_; ++i)
+  for (uint32_t i(0); i < kDataSize_; ++i)
     EXPECT_EQ(decrypted_[i], original_[i]);
 }
 

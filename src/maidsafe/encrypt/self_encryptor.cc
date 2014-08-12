@@ -61,7 +61,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
                              std::function<NonEmptyString(const std::string&)> get_from_store)
     : data_map_(data_map),
       kOriginalDataMap_(data_map),
-      sequencer_(kMaxChunkSize * 3),  // space for  min first 3 chunks 
+      sequencer_(kMaxChunkSize * 3),  // space for  min first 3 chunks
       chunks_(),
       buffer_(buffer),
       get_from_store_(get_from_store),
@@ -222,7 +222,7 @@ void SelfEncryptor::Close() {
   closed_ = true;
 }
 
-//##############################Private######################
+// ##############################Private######################
 
 void SelfEncryptor::PrepareWindow(uint32_t length, uint64_t position, bool write) {
   if (sequencer_.size() < file_size_) {
@@ -418,7 +418,7 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_
   }
 }
 
-//####################Helpers############################
+// ####################Helpers############################
 
 uint32_t SelfEncryptor::GetChunkSize(uint32_t chunk) const {
   if (file_size_ < 3 * kMinChunkSize)
@@ -479,7 +479,6 @@ std::pair<uint64_t, uint64_t> SelfEncryptor::GetStartEndPositions(uint32_t chunk
   } else if (penultimate) {
     start = ((GetChunkSize(0) * (chunk_number - 1)) + GetChunkSize(chunk_number - 1));
   } else {
-
     start = (GetChunkSize(0) * (chunk_number));
   }
 

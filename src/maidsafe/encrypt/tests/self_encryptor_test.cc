@@ -877,7 +877,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   decrypted.assign(decrypted.size(), 1);
   EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()), kSize + 2, 0));
   EXPECT_EQ(original, decrypted);
-  // TODO - this needs aplit into different tests where the self_encryptor can be closed
+  // TODO(DAVID) - this needs aplit into different tests where the self_encryptor can be closed
   // EXPECT_EQ(kSize + 2, self_encryptor_->size());
   // EXPECT_EQ(kSize + 2, TotalSize(data_map_));
   // EXPECT_TRUE(data_map_.content.empty());
@@ -1060,7 +1060,7 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
 
   // EXPECT_NO_THROW(self_encryptor_->Close());
   // Prehash checks
-  // TODO - check validity of this test now as algorithm slightly different
+  // TODO(DAVID) - check validity of this test now as algorithm slightly different
   // for (uint32_t i = 0; i != num_chunks - 1; ++i) {
   //   for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
   //     EXPECT_EQ(prehash[j], self_encryptor_->data_map().chunks[i].pre_hash[j])
@@ -1135,8 +1135,8 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
 }
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
-  // TODO - figure out what scenario1 and 2 is and rename these tests and understand this one in
-  // particular
+  // TODO(DAVID) - figure out what scenario1 and 2 is and rename these tests and understand
+  // this one in particular
   const size_t kTestDataSize(kMaxChunkSize * 40);
   {
     SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);

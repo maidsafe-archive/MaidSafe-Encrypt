@@ -43,7 +43,7 @@ namespace test {
 
 class EncryptBasicTest : public testing::Test {
  public:
-   EncryptBasicTest()
+    EncryptBasicTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
                      [](const std::string& name, const NonEmptyString&) {
