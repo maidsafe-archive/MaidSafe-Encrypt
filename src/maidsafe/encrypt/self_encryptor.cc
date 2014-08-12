@@ -363,21 +363,22 @@ void SelfEncryptor::GetPadIvKey(uint32_t chunk_number, ByteVector& key, ByteVect
 
 void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_t length) {
   SCOPED_PROFILE
-  assert(data_map_.chunks.size() >= chunk_number);
-  assert(chunks_.size() >= chunk_number);
-
-  assert(chunks_.size() >= chunk_number);
   auto chunk_n_itr(chunks_.find(chunk_number));
   assert(chunk_n_itr != std::end(chunks_) && "this chunk chunkstatus not found");
 #ifndef NDEBUG
+  {
+  std::lock_guard<std::mutex> guard(data_mutex_);
+  assert(data_map_.chunks.size() >= chunk_number);
+  assert(chunks_.size() >= chunk_number);
   uint32_t n_1_chunk(GetPreviousChunkNumber(chunk_number));
   uint32_t n_2_chunk(GetPreviousChunkNumber(n_1_chunk));
   auto chunk_n_1_itr(chunks_.find(n_1_chunk));
   auto chunk_n_2_itr(chunks_.find(n_2_chunk));
-#endif
 
   assert(chunk_n_1_itr->second != ChunkStatus::to_be_hashed && "chunk_n_1 hash invalid");
   assert(chunk_n_2_itr->second != ChunkStatus::to_be_hashed && "chunk_n_2 hash invalid");
+  }
+#endif
 
   ByteVector pad(kPadSize);
   ByteVector key(crypto::AES256_KeySize);
@@ -406,10 +407,7 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_
   {
   std::lock_guard<std::mutex> guard(data_mutex_);
   buffer_.Store(result, NonEmptyString(chunk_content));
-}
   chunk_n_itr->second = ChunkStatus::stored;
-  {
-    std::lock_guard<std::mutex> guard(data_mutex_);
     ByteVector tmp2(std::begin(result), std::end(result));
     std::swap(data_map_.chunks[chunk_number].hash, tmp2);
     assert(crypto::SHA512::DIGESTSIZE == data_map_.chunks[chunk_number].hash.size() &&
