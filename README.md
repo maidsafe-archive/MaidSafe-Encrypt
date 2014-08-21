@@ -1,5 +1,6 @@
 For full details, see https://github.com/maidsafe/MaidSafe-Encrypt/wiki
 
+
 [ ![Codeship Status for maidsafe/MaidSafe-Encrypt](https://www.codeship.io/projects/ba08be90-0af2-0132-8282-2227938cc99b/status)](https://www.codeship.io/projects/31888)
 
 
