@@ -133,11 +133,14 @@ bool SelfEncryptor::Truncate(uint64_t position) {
   auto old_size = file_size_;
   file_size_ = position;  //  All helper methods calculate from file size
   if (position < old_size) {
-    for (auto& t : chunks_)
-      if (t.first > position)
-        chunks_.erase(chunks_.find(t.first));  // this is the only erase on chunks_
+    auto it(std::begin(chunks_));
+    while (it != std::end(chunks_))
+      if (it->first > position)
+        it = chunks_.erase(it);
+      else
+        ++it;
   } else {
-    assert(position - old_size < std::numeric_limits<uint32_t>::max());
+    assert(position - old_size < std::numeric_limits<size_t>::max());
     PrepareWindow(static_cast<uint32_t>(position - old_size), old_size, true);
   }
   ose.Release();
