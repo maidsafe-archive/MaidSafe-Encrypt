@@ -86,12 +86,12 @@ class PrivateSelfEncryptorTest : public testing::Test {
   std::unique_ptr<char[]> original_, decrypted_;
 };
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersSmallfileContentOnly) {
+TEST_F(PrivateSelfEncryptorTest, BEH_HelpersSmallfileContentOnly) {
   SetEncryptorSize((kMinChunkSize * 3) - 1);
   EXPECT_EQ(GetNumChunks(), 0);
 }
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MinChunks) {
+TEST_F(PrivateSelfEncryptorTest, BEH_HelpersEqual3MinChunks) {
   SetEncryptorSize(kMinChunkSize * 3);
   EXPECT_EQ(GetNumChunks(), 3);
   EXPECT_EQ(GetChunkSize(0), 1024);
@@ -111,7 +111,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MinChunks) {
   EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMinChunkSize);
 }
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_Helpers3MinChunksPlus1) {
+TEST_F(PrivateSelfEncryptorTest, BEH_Helpers3MinChunksPlus1) {
   SetEncryptorSize((kMinChunkSize * 3) + 1);
   EXPECT_EQ(GetNumChunks(), 3);
   EXPECT_EQ(GetChunkSize(0), 1024);
@@ -131,7 +131,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_Helpers3MinChunksPlus1) {
   EXPECT_EQ(GetStartEndPositions(2).second, 1 + (3 * kMinChunkSize));
 }
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
+TEST_F(PrivateSelfEncryptorTest, BEH_HelpersEqual3MaxChunks) {
   SetEncryptorSize(kMaxChunkSize * 3);
   EXPECT_EQ(GetNumChunks(), 3);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
@@ -151,7 +151,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3MaxChunks) {
   EXPECT_EQ(GetStartEndPositions(2).second, 3 * kMaxChunkSize);
 }
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersMaxChunksPlus1) {
+TEST_F(PrivateSelfEncryptorTest, BEH_HelpersMaxChunksPlus1) {
   SetEncryptorSize((kMaxChunkSize * 3) + 1);
   EXPECT_EQ(GetNumChunks(), 4);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
@@ -177,7 +177,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersMaxChunksPlus1) {
             (kMinChunkSize + 1) + ((3 * kMaxChunkSize) - kMinChunkSize));
 }
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3andaHalfMaxChunks) {
+TEST_F(PrivateSelfEncryptorTest, BEH_HelpersEqual3andaHalfMaxChunks) {
   SetEncryptorSize((kMaxChunkSize * 7) / 2);
   EXPECT_EQ(GetNumChunks(), 4);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
@@ -202,7 +202,7 @@ TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual3andaHalfMaxChunks) {
   EXPECT_EQ(GetStartEndPositions(3).second, 3.5 * kMaxChunkSize);
 }
 
-TEST_F(PrivateSelfEncryptorTest, PRIV_HelpersEqual5MaxChunks) {
+TEST_F(PrivateSelfEncryptorTest, BEH_HelpersEqual5MaxChunks) {
   SetEncryptorSize(kMaxChunkSize * 5);
   EXPECT_EQ(GetNumChunks(), 5);
   EXPECT_EQ(GetChunkSize(0), kMaxChunkSize);
