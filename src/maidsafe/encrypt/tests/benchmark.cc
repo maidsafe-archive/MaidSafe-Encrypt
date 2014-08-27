@@ -85,7 +85,7 @@ TEST_P(Benchmark, FUNC_BenchmarkCompressible) {
 
 TEST_P(Benchmark, FUNC_BenchmarkIncompressible) {
   memcpy(original_.get(), RandomString(kTestDataSize_).data(), kTestDataSize_);
-  WriteThenRead(true);
+  WriteThenRead(false);
 }
 
 INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536, 1048576));
