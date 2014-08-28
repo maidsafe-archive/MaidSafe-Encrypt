@@ -49,7 +49,6 @@
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/xor.h"
-#include "maidsafe/encrypt/cache.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/data_map.pb.h"
 
