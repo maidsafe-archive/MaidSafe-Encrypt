@@ -21,6 +21,7 @@
 #include "boost/filesystem/operations.hpp"
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/make_unique.h"
 #include "maidsafe/common/test.h"
 
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
@@ -56,17 +57,19 @@ class Benchmark : public EncryptTestBase, public testing::TestWithParam<uint32_t
     std::string encrypted(encrypting ? "Self-encrypted " : "Self-decrypted ");
     std::string comp(compressible ? "compressible" : "incompressible");
     std::cout << encrypted << BytesToDecimalSiUnits(kTestDataSize_) << " of " << comp << " data in "
-          << BytesToDecimalSiUnits(kPieceSize_) << " pieces in " << (duration / 1000)
-          << " milliseconds at a speed of " << BytesToDecimalSiUnits(rate) << "/s\n";
+              << BytesToDecimalSiUnits(kPieceSize_) << " pieces in " << (duration / 1000)
+              << " milliseconds at a speed of " << BytesToDecimalSiUnits(rate) << "/s\n";
   }
   void WriteThenRead(bool compressible) {
     chrono_time_point start_time(std::chrono::high_resolution_clock::now());
     for (uint32_t i(0); i < kTestDataSize_; i += kPieceSize_)
       ASSERT_TRUE(self_encryptor_->Write(&original_[i], kPieceSize_, i));
-    self_encryptor_->Flush();
+    self_encryptor_->Close();
     chrono_time_point stop_time(std::chrono::high_resolution_clock::now());
     PrintResult(start_time, stop_time, true, compressible);
 
+    self_encryptor_ =
+        maidsafe::make_unique<SelfEncryptor>(data_map_, local_store_, get_from_store_);
     start_time = std::chrono::high_resolution_clock::now();
     for (uint32_t i(0); i < kTestDataSize_; i += kPieceSize_)
       ASSERT_TRUE(self_encryptor_->Read(&decrypted_[i], kPieceSize_, i));
@@ -74,6 +77,7 @@ class Benchmark : public EncryptTestBase, public testing::TestWithParam<uint32_t
     for (uint32_t i(0); i < kTestDataSize_; ++i)
       ASSERT_EQ(original_[i], decrypted_[i]) << "failed @ count " << i;
     PrintResult(start_time, stop_time, false, compressible);
+    self_encryptor_->Close();
   }
   const uint32_t kTestDataSize_, kPieceSize_;
 };
@@ -94,7 +98,6 @@ INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536, 10
 // acceptable level.  While the test is running, memory usage must be visually
 // monitored.
 TEST(MassiveFile, FUNC_MemCheck) {
-  int kNumProcs(8);
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path store_path(*test_dir / "data_store");
   DataBuffer<std::string> buffer(
@@ -108,7 +111,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
 
   DataMap data_map;
   std::unique_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map, buffer,
-      [&buffer](const std::string& name) { return buffer.Get(name); }, kNumProcs));
+      [&buffer](const std::string& name) { return buffer.Get(name); }));
 
   const uint32_t kDataSize((1 << 20) + 1);
   std::unique_ptr<char> original(new char[kDataSize]);
@@ -120,19 +123,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
     EXPECT_TRUE(self_encryptor->Write(original.get(), kDataSize, offset));
 
   LOG(kInfo) << "Resetting self encryptor.";
-  self_encryptor.reset();
-  // Sleep to allow chosen memory monitor to update its display.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-
-  //  LOG(kInfo) << "Resetting chunk store.";
-  //  client_nfs.reset();
-  //  boost::system::error_code rm_error_code, exists_error_code;
-  //  EXPECT_GT(fs::remove_all(store_path, rm_error_code), 0U) << rm_error_code.message();
-  // EXPECT_FALSE(fs::exists(store_path, exists_error_code)) << "Remove all failed: " <<
-  // rm_error_code
-  //      << (exists_error_code ? "\nExists error: " + exists_error_code.message() : "");
-  //  // Sleep to allow chosen memory monitor to update its display.
-  //  std::this_thread::sleep_for(std::chrono::seconds(3));
+  self_encryptor->Close();
 }
 
 }  // namespace test

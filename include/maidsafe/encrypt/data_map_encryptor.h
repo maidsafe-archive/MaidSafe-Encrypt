@@ -16,38 +16,34 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#include "maidsafe/encrypt/byte_array.h"
-#include "maidsafe/common/log.h"
+#ifndef MAIDSAFE_ENCRYPT_DATA_MAP_ENCRYPTOR_H_
+#define MAIDSAFE_ENCRYPT_DATA_MAP_ENCRYPTOR_H_
+
+#include <cstdint>
+#include <string>
+#include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/common/types.h"
+#include "maidsafe/common/crypto.h"
 
 namespace maidsafe {
 
 namespace encrypt {
+enum class EncryptionAlgorithm : uint32_t {
+  kSelfEncryptionVersion0 = 0,
+  kDataMapEncryptionVersion0
+};
 
-ByteArray GetNewByteArray(uint32_t size) {
-  ByteArray byte_array(new byte[size], ByteArrayDeleter(size));
-  memset(byte_array.get(), 0, size);
-  return std::move(byte_array);
-}
+extern const EncryptionAlgorithm kSelfEncryptionVersion;
+extern const EncryptionAlgorithm kDataMapEncryptionVersion;
 
-uint32_t Size(const std::shared_ptr<byte>& ptr) {
-  return ptr ? std::get_deleter<ByteArrayDeleter>(ptr)->kSize_ : 0;
-}
+crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& this_id,
+                                  const DataMap& data_map);
 
-uint32_t MemCopy(const ByteArray& destination, uint32_t destination_offset, const void* source,
-                 uint32_t copy_size) {
-  if (Size(destination) < destination_offset) {
-    LOG(kWarning) << "Size (" << Size(destination) << ") < offset (" << destination_offset << ").";
-    return 0;
-  }
-  if (Size(destination) - destination_offset < copy_size) {
-    LOG(kWarning) << "Resizing from " << copy_size << " to "
-                  << Size(destination) - destination_offset << " to avoid overrun.";
-    copy_size = Size(destination) - destination_offset;
-  }
-  memcpy(destination.get() + destination_offset, source, copy_size);
-  return copy_size;
-}
+DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
+                       const std::string& encrypted_data_map);
 
 }  // namespace encrypt
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_ENCRYPT_DATA_MAP_ENCRYPTOR_H_

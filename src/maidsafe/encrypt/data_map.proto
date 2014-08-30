@@ -24,7 +24,6 @@ message ChunkDetails {
   required bytes hash = 1;
   required bytes pre_hash = 2;
   required uint32 size = 3;
-  required uint32 pre_hash_state = 4;
   required uint32 storage_state = 5;
 }
 

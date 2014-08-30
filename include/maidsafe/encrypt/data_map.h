@@ -23,54 +23,50 @@
 #include <string>
 #include <vector>
 
+#include "maidsafe/common/config.h"
 #include "maidsafe/common/crypto.h"
-#include "boost/shared_array.hpp"
+#include "maidsafe/common/types.h"
 
 namespace maidsafe {
 
 namespace encrypt {
 
+using ByteVector = std::vector<byte>;
+
 enum class EncryptionAlgorithm : uint32_t;
 
 struct ChunkDetails {
-  enum PreHashState {
-    kEmpty,
-    kOutdated,
-    kOk
-  };
   enum StorageState {
     kStored,
     kPending,
     kUnstored
   };
-  ChunkDetails()
-      : hash(),
-        pre_hash(),
-        old_n1_pre_hash(),
-        old_n2_pre_hash(),
-        pre_hash_state(kEmpty),
-        storage_state(kUnstored),
-        size(0) {}
-  std::string hash;                           // SHA512 of processed chunk
-  byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
+  ChunkDetails() : hash(), pre_hash(), storage_state(kUnstored), size(0) {}
+  ChunkDetails(const ChunkDetails&) = default;
+  ChunkDetails(ChunkDetails&&) MAIDSAFE_NOEXCEPT;
+  ChunkDetails& operator=(const ChunkDetails&) = default;
+  ~ChunkDetails() = default;
+
+  ByteVector hash;      // SHA512 of processed chunk
+  ByteVector pre_hash;  // SHA512 of unprocessed src data
   // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
   // modified content
-  boost::shared_array<byte> old_n1_pre_hash, old_n2_pre_hash;
-  // If the pre_hash hasn't been calculated, or if data has been written to the
-  // chunk since the pre_hash was last calculated, pre_hash_ok should be false.
-  PreHashState pre_hash_state;
   StorageState storage_state;
   uint32_t size;  // Size of unprocessed source data in bytes
 };
 
 struct DataMap {
   DataMap();
+  DataMap(const DataMap&) = default;
+  DataMap(DataMap&&) MAIDSAFE_NOEXCEPT;
+  DataMap& operator=(const DataMap&) = default;
+  ~DataMap() = default;
   uint64_t size() const;
   bool empty() const;
 
   EncryptionAlgorithm self_encryption_version;
   std::vector<ChunkDetails> chunks;
-  std::string content;  // Whole data item, if small enough
+  ByteVector content;  // Whole data item, if small enough
 };
 
 bool operator==(const DataMap& lhs, const DataMap& rhs);
