@@ -16,17 +16,24 @@
     See the Licences for the specific language governing permissions and limitations relating to
     use of the MaidSafe Software.                                                                 */
 
-#ifndef MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
-#define MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
-
-#include <memory>
-#include <string>
 #include <thread>
+#include <array>
+#include <cstdlib>
+#include <string>
+#include <memory>
+#include "boost/filesystem.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/data_buffer.h"
 
 #include "maidsafe/encrypt/self_encryptor.h"
+#include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/config.h"
+#include "maidsafe/encrypt/tests/encrypt_test_base.h"
+
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
@@ -34,9 +41,9 @@ namespace encrypt {
 
 namespace test {
 
-class EncryptTestBase {
+class EncryptBasicTest : public testing::Test {
  public:
-  explicit EncryptTestBase()
+    EncryptBasicTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
                      [](const std::string& name, const NonEmptyString&) {
@@ -50,10 +57,11 @@ class EncryptTestBase {
         original_(),
         decrypted_() {}
 
-  virtual ~EncryptTestBase() = default;
+  virtual ~EncryptBasicTest() = default;
 
  protected:
   maidsafe::test::TestPath test_dir_;
+  int num_procs_;
   DataBuffer<std::string> local_store_;
   DataMap data_map_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
@@ -61,10 +69,43 @@ class EncryptTestBase {
   std::unique_ptr<char[]> original_, decrypted_;
 };
 
+TEST_F(EncryptBasicTest, BEH_SMallfileContentOnly) {
+  auto size(1024);
+  std::string temp(RandomString(size));
+  std::string result;
+  result.reserve(size);
+  char* res(new char[size]);
+  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
+  EXPECT_TRUE(self_encryptor_->Read(res, size, 0));
+  result.assign(res, res + size);
+  EXPECT_EQ(result, temp);
+  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
+  self_encryptor_->Close();
+  EXPECT_EQ(size, data_map_.size());
+  auto encryptor_(new SelfEncryptor(data_map_, local_store_, get_from_store_));
+  EXPECT_TRUE(encryptor_->Read(res, size, 0));
+  result.assign(res, res + size);
+  EXPECT_EQ(result, temp);
+}
+
+TEST_F(EncryptBasicTest, BEH_LargeFileWithLargeGap) {
+  auto size(5 * 1024 * 1024);
+  std::string temp(RandomString(size));
+  std::string result;
+  result.reserve(size);
+  char* res(new char[size]);
+  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
+  EXPECT_TRUE(self_encryptor_->Read(res, size, 0));
+  result.assign(res, res + size);
+  EXPECT_EQ(result, temp);
+  EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, 0));
+  // write a large gap in the file
+  // EXPECT_TRUE(self_encryptor_->Write(&temp.data()[0], size, size * 2));
+  self_encryptor_->Close();
+}
+
 }  // namespace test
 
 }  // namespace encrypt
 
 }  // namespace maidsafe
-
-#endif  // MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
