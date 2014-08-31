@@ -1217,6 +1217,63 @@ TEST_F(BasicTest, BEH_TruncateDecrease) {
   self_encryptor_->Close();
 }
 
+TEST_F(BasicTest, BEH_TruncateIncreaseDecrease) {
+  const size_t kTestDataSize(25034);
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  memset(plain_data.get(), 0, kTestDataSize);
+  std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> content_data(new char[kTestDataSize]);
+  for (size_t i = 0; i < kTestDataSize; ++i) {
+    plain_data[i] = plain_text[i];
+    content_data[i] = plain_text[i];
+  }
+
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
+    EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize));
+    EXPECT_EQ(kTestDataSize, self_encryptor.size());
+    EXPECT_TRUE(self_encryptor.Truncate(0));
+    EXPECT_EQ(0, self_encryptor.size());
+    self_encryptor.Close();
+  }
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
+    EXPECT_TRUE(self_encryptor.Truncate(kTestDataSize));
+    EXPECT_TRUE(self_encryptor.Write(content_data.get(), kTestDataSize, 0));
+    self_encryptor.Close();
+  }
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
+    uint32_t read_position(0);
+    uint32_t read_length(24576);
+    boost::scoped_array<char> first_read(new char[read_length]);
+    EXPECT_TRUE(self_encryptor.Read(first_read.get(), read_length, read_position));
+    for (size_t i = 0; i < read_length; ++i) {
+      if ((i + read_position) < self_encryptor.size())
+        ASSERT_EQ(plain_data[read_position + i], first_read[i]) << "not match " << i << " from "
+        << read_position << " when total data is "
+        << self_encryptor.size();
+    }
+    read_position = 24576;
+    read_length = 458;
+    boost::scoped_array<char> second_read(new char[read_length]);
+    EXPECT_TRUE(self_encryptor.Read(second_read.get(), read_length, read_position));
+    for (size_t i = 0; i < read_length; ++i) {
+      if ((i + read_position) < self_encryptor.size())
+        ASSERT_EQ(plain_data[read_position + i], second_read[i]) << "not match " << i << " from "
+        << read_position << " when total data is "
+        << self_encryptor.size();
+    }
+    self_encryptor.Close();
+  }
+  {
+    SelfEncryptor self_encryptor(data_map_, local_store_, get_from_store_);
+    EXPECT_TRUE(self_encryptor.Truncate(0));
+    EXPECT_EQ(0, self_encryptor.size());
+    self_encryptor.Close();
+  }
+}
+
 TEST_F(BasicTest, FUNC_RandomAccess) {
   uint32_t chunk_size(1024);
   std::vector<uint32_t> num_of_tries;
