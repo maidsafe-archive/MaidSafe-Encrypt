@@ -148,6 +148,8 @@ bool SelfEncryptor::Truncate(uint64_t position) {
 }
 
 bool SelfEncryptor::Flush() {
+  if (closed_)
+    BOOST_THROW_EXCEPTION(MakeError(EncryptErrors::encryptor_closed));
   return true;
 }  // noop until we can tell if this is required when asked
 
