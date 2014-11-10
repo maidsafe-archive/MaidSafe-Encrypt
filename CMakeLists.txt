@@ -57,7 +57,7 @@ ms_add_executable(benchmark_encrypt "Tests/Encrypt"
 target_include_directories(benchmark_encrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(benchmark_encrypt maidsafe_encrypt maidsafe_test)
 
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   ms_add_executable(test_encrypt "Tests/Encrypt"  ${EncryptTestsAllFiles})
   target_include_directories(test_encrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
   target_link_libraries(test_encrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client maidsafe_test)
@@ -75,7 +75,7 @@ include(standard_flags)
 #==================================================================================================#
 # Tests                                                                                            #
 #==================================================================================================#
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   ms_add_default_tests()
   ms_add_gtests(test_encrypt)
   set(Timeout 300)
@@ -94,7 +94,7 @@ install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ COMPONENT Development DESTINATI
 
 install(TARGETS benchmark_encrypt COMPONENT Benchmarkss CONFIGURATIONS Release RUNTIME DESTINATION bin)
 
-if(MaidsafeTesting)
+if(INCLUDE_TESTS)
   install(TARGETS test_encrypt COMPONENT Tests CONFIGURATIONS Debug RUNTIME DESTINATION bin/debug)
   install(TARGETS test_encrypt COMPONENT Tests CONFIGURATIONS Release RUNTIME DESTINATION bin)
 endif()
