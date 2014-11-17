@@ -245,7 +245,7 @@ void SelfEncryptor::PrepareWindow(uint32_t length, uint64_t position, bool write
     chunks_.clear();  // make sure to mark all correctly
   } else {            // do not read ahead unless possible
     for (auto i(1); i < 3; ++i)
-      if (last_chunk + i < GetNumChunks() - 1)
+      if (last_chunk < GetNumChunks())
         ++last_chunk;
   }
 
@@ -500,12 +500,11 @@ uint32_t SelfEncryptor::GetPreviousChunkNumber(uint32_t chunk_number) const {
 }
 
 uint32_t SelfEncryptor::GetChunkNumber(uint64_t position) const {
-  if (GetNumChunks() == 0 || position == 0)
+  if (GetNumChunks() == 0) {
     return 0;
-  if (static_cast<uint32_t>(position % GetChunkSize(0)) == 0 || position < 3 * kMaxChunkSize)
-    return static_cast<uint32_t>(position / GetChunkSize(0));
-  else
-    return static_cast<uint32_t>(position / GetChunkSize(0)) + 1;
+  }
+
+  return uint32_t(position / GetChunkSize(0));
 }
 
 }  // namespace encrypt
