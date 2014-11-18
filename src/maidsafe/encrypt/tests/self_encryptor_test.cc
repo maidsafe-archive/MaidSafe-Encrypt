@@ -1403,14 +1403,14 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
 }
 
 TEST_F(BasicTest, ReadAfterClose) {
-  const std::size_t read_size = 104857; // 0.1MB
-  const std::string expected(RandomString(8388608)); // 8MB
+  const std::size_t read_size = 104857;  // 0.1MB
+  const std::string expected(RandomString(8388608));  // 8MB
 
   self_encryptor_->Write(expected.data(), std::uint32_t(expected.size()), 0);
 
   std::string actual;
-  std::size_t read_offset = 209715; // 0.2MB
-  const std::size_t step_size = 524288; // 0.5MB
+  std::size_t read_offset = 209715;  // 0.2MB
+  const std::size_t step_size = 524288;  // 0.5MB
 
   while (read_offset <= expected.size()) {
     self_encryptor_->Close();
