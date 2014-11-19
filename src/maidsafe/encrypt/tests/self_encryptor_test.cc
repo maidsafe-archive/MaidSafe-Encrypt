@@ -1402,7 +1402,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
   // be considered
 }
 
-TEST_F(BasicTest, ReadAfterClose) {
+TEST_F(BasicTest, BEH_ReadAfterClose) {
   const std::size_t read_size = 104857;  // 0.1MB
   const std::string expected(RandomString(8388608));  // 8MB
 
