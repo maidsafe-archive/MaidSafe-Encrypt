@@ -48,8 +48,13 @@ list(REMOVE_ITEM EncryptTestsAllFiles "${PROJECT_SOURCE_DIR}/src/maidsafe/encryp
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(maidsafe_encrypt ${EncryptAllFiles})
-target_include_directories(maidsafe_encrypt PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_encrypt maidsafe_common)
+target_include_directories(maidsafe_encrypt
+  PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+    ${CMAKE_BINARY_DIR}/GeneratedProtoFiles
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(maidsafe_encrypt maidsafe_common protobuf_lite)
 
 ms_add_executable(benchmark_encrypt "Tests/Encrypt"
                  ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/benchmark.cc
