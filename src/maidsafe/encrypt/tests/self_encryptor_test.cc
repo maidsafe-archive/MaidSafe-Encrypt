@@ -154,7 +154,7 @@ class BasicOffsetTest : public EncryptTestBase, public testing::TestWithParam<Si
   TestFileSize test_file_size_;
 };
 
-TEST_P(BasicOffsetTest, BEH_EncryptDecrypt) {
+TEST_P(BasicOffsetTest, FUNC_EncryptDecrypt) {
   EXPECT_TRUE(self_encryptor_->Write(original_.get(), kDataSize_, kOffset_));
 
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kOffset_ + kDataSize_, 0));
@@ -376,7 +376,7 @@ INSTANTIATE_TEST_CASE_P(Writing, SmallSingleBytesTest,
 
 class InProcessTest : public EncryptTest {};
 
-TEST_P(InProcessTest, BEH_ReadInOrder) {
+TEST_P(InProcessTest, FUNC_ReadInOrder) {
   uint32_t current_write_position(0), current_write_size(0);
   uint32_t current_read_position(0), current_read_size(0);
   while (current_read_position != kDataSize_) {
@@ -432,7 +432,7 @@ class BasicTest : public EncryptTestBase, public testing::Test {
   std::string content_;
 };
 
-TEST_F(BasicTest, BEH_NewRead) {
+TEST_F(BasicTest, FUNC_NewRead) {
   EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
 
   uint32_t read_position(0), index(0);
@@ -489,7 +489,7 @@ TEST_F(BasicTest, BEH_NewRead) {
   self_encryptor.Close();
 }
 
-TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
+TEST_F(BasicTest, FUNC_WriteRandomSizeRandomPosition) {
   //  create string for input, break into random sized pieces
   //  then write in random order
   std::vector<std::pair<uint64_t, std::string>> broken_data;
@@ -614,7 +614,7 @@ TEST_F(BasicTest, FUNC_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
   self_encryptor_->Close();
 }
 
-TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
+TEST_F(BasicTest, FUNC_WriteLongAndShort65536SegmentsReadThenRewrite) {
   size_t count(0);
   size_t max_length = kMaxChunkSize * 3 + kMaxChunkSize / 3;
   const size_t parts(50), size(65536);
@@ -685,7 +685,7 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
   self_encryptor_->Close();
 }
 
-TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
+TEST_F(BasicTest, FUNC_4096ByteOutOfSequenceWritesReadsAndRewrites) {
   // 10 chunks, (1024*256*10-4096)...
   // 639, 4096 byte parts...
   const size_t kSize(4096), kParts((10 * kMaxChunkSize / kSize) - 1), kGapIndex(30);
@@ -1137,7 +1137,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
   EXPECT_NO_THROW(temp_self_encryptor.Close());
 }
 
-TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
+TEST_F(BasicTest, FUNC_TruncateIncreaseScenario2) {
   // TODO(DAVID) - figure out what scenario1 and 2 is and rename these tests and understand
   // this one in particular
   const size_t kTestDataSize(kMaxChunkSize * 40);
@@ -1402,7 +1402,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
   // be considered
 }
 
-TEST_F(BasicTest, BEH_ReadAfterClose) {
+TEST_F(BasicTest, FUNC_ReadAfterClose) {
   const std::size_t read_size = 104857;  // 0.1MB
   const std::string expected(RandomString(8388608));  // 8MB
 
