@@ -35,11 +35,14 @@
 #ifdef WIN32
 #pragma warning(pop)
 #endif
+#include "boost/filesystem.hpp"
+#include "boost/range/adaptor/sliced.hpp"
+#include "boost/range/algorithm/equal.hpp"
 #include "boost/scoped_array.hpp"
 #include "boost/shared_array.hpp"
-#include "boost/filesystem.hpp"
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/make_unique.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -1397,6 +1400,34 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
   }
   // The situation combining in-process and out-process access may need to
   // be considered
+}
+
+TEST_F(BasicTest, BEH_ReadAfterClose) {
+  const std::size_t read_size = 104857;  // 0.1MB
+  const std::string expected(RandomString(8388608));  // 8MB
+
+  self_encryptor_->Write(expected.data(), std::uint32_t(expected.size()), 0);
+
+  std::string actual;
+  std::size_t read_offset = 209715;  // 0.2MB
+  const std::size_t step_size = 524288;  // 0.5MB
+
+  while (read_offset <= expected.size()) {
+    self_encryptor_->Close();
+    self_encryptor_ = maidsafe::make_unique<SelfEncryptor>(
+        data_map_, local_store_, get_from_store_);
+
+    actual.clear();
+    actual.resize(read_size);
+
+    self_encryptor_->Read(&actual[0], std::uint32_t(actual.size()), read_offset);
+    EXPECT_TRUE(
+        boost::range::equal(
+            expected | boost::adaptors::sliced(read_offset, read_offset + read_size),
+            actual));
+
+    read_offset += step_size;
+  }
 }
 
 
