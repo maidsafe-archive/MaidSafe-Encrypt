@@ -78,7 +78,7 @@ class EncryptDataMapTest : public EncryptTestBase, public testing::Test {
 };
 
 
-TEST_F(EncryptDataMapTest, BEH_SerialiseParseDataMap) {
+TEST_F(EncryptDataMapTest, FUNC_SerialiseParseDataMap) {
   EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
   EXPECT_NO_THROW(self_encryptor_->Close());
 
@@ -95,7 +95,7 @@ TEST_F(EncryptDataMapTest, BEH_SerialiseParseDataMap) {
     EXPECT_EQ(decrypted_[i], original_[i]);
 }
 
-TEST_F(EncryptDataMapTest, BEH_EncryptDecryptDataMap) {
+TEST_F(EncryptDataMapTest, FUNC_EncryptDecryptDataMap) {
   // TODO(Fraser#5#): 2012-01-05 - Test failure cases also.
   EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
   EXPECT_NO_THROW(self_encryptor_->Close());
