@@ -82,13 +82,9 @@ TEST_F(EncryptDataMapTest, FUNC_SerialiseParseDataMap) {
   EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
   EXPECT_NO_THROW(self_encryptor_->Close());
 
-  std::string serialised_data_map;
-  SerialiseDataMap(data_map_, serialised_data_map);
-
-  DataMap new_data_map;
-  ParseDataMap(serialised_data_map, new_data_map);
-
-  SelfEncryptor self_encryptor(new_data_map, local_store_, get_from_store_);
+  SerialisedData serialised_data_map(Serialise(data_map_));
+  DataMap parsed_data_map(Parse<DataMap>(serialised_data_map));
+  SelfEncryptor self_encryptor(parsed_data_map, local_store_, get_from_store_);
   EXPECT_TRUE(self_encryptor.Read(&decrypted_[0], kDataSize_, 0));
   EXPECT_NO_THROW(self_encryptor.Close());
   for (uint32_t i(0); i < kDataSize_; ++i)
@@ -99,12 +95,12 @@ TEST_F(EncryptDataMapTest, FUNC_EncryptDecryptDataMap) {
   // TODO(Fraser#5#): 2012-01-05 - Test failure cases also.
   EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
   EXPECT_NO_THROW(self_encryptor_->Close());
-  const Identity kParentId(RandomString(64)), kThisId(RandomString(64));
+  const Identity kParentId(MakeIdentity()), kThisId(MakeIdentity());
 
-  asymm::CipherText encrypted_data_map = EncryptDataMap(kParentId, kThisId, data_map_);
-  EXPECT_FALSE(encrypted_data_map.string().empty());
+  SerialisedData encrypted_data_map(EncryptDataMap(kParentId, kThisId, data_map_));
+  EXPECT_FALSE(encrypted_data_map.empty());
 
-  DataMap retrieved_data_map(DecryptDataMap(kParentId, kThisId, encrypted_data_map.string()));
+  DataMap retrieved_data_map(DecryptDataMap(kParentId, kThisId, encrypted_data_map));
 
   SelfEncryptor self_encryptor(retrieved_data_map, local_store_, get_from_store_);
   EXPECT_TRUE(self_encryptor.Read(&decrypted_[0], kDataSize_, 0));

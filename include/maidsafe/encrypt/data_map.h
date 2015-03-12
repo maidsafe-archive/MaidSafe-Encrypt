@@ -26,6 +26,7 @@
 #include "maidsafe/common/config.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/types.h"
+#include "maidsafe/common/serialisation/serialisation.h"
 
 namespace maidsafe {
 
@@ -45,7 +46,13 @@ struct ChunkDetails {
   ChunkDetails(const ChunkDetails&) = default;
   ChunkDetails(ChunkDetails&&) MAIDSAFE_NOEXCEPT;
   ChunkDetails& operator=(const ChunkDetails&) = default;
+  ChunkDetails& operator=(ChunkDetails&& other) MAIDSAFE_NOEXCEPT;
   ~ChunkDetails() = default;
+
+  template <typename Archive>
+  Archive& serialize(Archive& archive) {
+    return archive(hash, pre_hash, storage_state, size);
+  }
 
   ByteVector hash;      // SHA512 of processed chunk
   ByteVector pre_hash;  // SHA512 of unprocessed src data
@@ -58,11 +65,17 @@ struct ChunkDetails {
 struct DataMap {
   DataMap();
   DataMap(const DataMap&) = default;
-  DataMap(DataMap&&) MAIDSAFE_NOEXCEPT;
+  DataMap(DataMap&& other) MAIDSAFE_NOEXCEPT;
   DataMap& operator=(const DataMap&) = default;
+  DataMap& operator=(DataMap&& other) MAIDSAFE_NOEXCEPT;
   ~DataMap() = default;
   uint64_t size() const;
   bool empty() const;
+
+  template <typename Archive>
+  Archive& serialize(Archive& archive) {
+    return archive(self_encryption_version, chunks, content);
+  }
 
   EncryptionAlgorithm self_encryption_version;
   std::vector<ChunkDetails> chunks;
@@ -71,9 +84,6 @@ struct DataMap {
 
 bool operator==(const DataMap& lhs, const DataMap& rhs);
 bool operator!=(const DataMap& lhs, const DataMap& rhs);
-
-void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map);
-void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map);
 
 }  // namespace encrypt
 

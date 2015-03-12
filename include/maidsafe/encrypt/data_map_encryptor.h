@@ -20,14 +20,16 @@
 #define MAIDSAFE_ENCRYPT_DATA_MAP_ENCRYPTOR_H_
 
 #include <cstdint>
-#include <string>
-#include "maidsafe/encrypt/data_map.h"
+
 #include "maidsafe/common/types.h"
 #include "maidsafe/common/crypto.h"
+
+#include "maidsafe/encrypt/data_map.h"
 
 namespace maidsafe {
 
 namespace encrypt {
+
 enum class EncryptionAlgorithm : uint32_t {
   kSelfEncryptionVersion0 = 0,
   kDataMapEncryptionVersion0
@@ -36,11 +38,11 @@ enum class EncryptionAlgorithm : uint32_t {
 extern const EncryptionAlgorithm kSelfEncryptionVersion;
 extern const EncryptionAlgorithm kDataMapEncryptionVersion;
 
-crypto::CipherText EncryptDataMap(const Identity& parent_id, const Identity& this_id,
-                                  const DataMap& data_map);
+SerialisedData EncryptDataMap(const Identity& parent_id, const Identity& this_id,
+                              const DataMap& data_map);
 
 DataMap DecryptDataMap(const Identity& parent_id, const Identity& this_id,
-                       const std::string& encrypted_data_map);
+                       const SerialisedData& encrypted_data_map);
 
 }  // namespace encrypt
 

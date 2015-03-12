@@ -100,18 +100,20 @@ INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536, 10
 TEST(MassiveFile, FUNC_MemCheck) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path store_path(*test_dir / "data_store");
-  DataBuffer<std::string> buffer(
+  DataBuffer buffer(
       MemoryUsage(4294967296U),
       DiskUsage(4294967296U),
-      [](const std::string& name, const NonEmptyString&) {
-        LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
-        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
-      },
-      store_path);
+      [](const DataBuffer::KeyType& name, const NonEmptyString&) {
+    LOG(kError) << "Buffer full - deleting " << base64::Substr(name.name);
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
+  },
+    store_path);
 
   DataMap data_map;
-  std::unique_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map, buffer,
-      [&buffer](const std::string& name) { return buffer.Get(name); }));
+  std::unique_ptr<SelfEncryptor> self_encryptor(
+      new SelfEncryptor(data_map, buffer, [&buffer](const std::string& name) {
+        return buffer.Get(DataBuffer::KeyType(Identity(name), DataTypeId(0)));
+      }));
 
   const uint32_t kDataSize((1 << 20) + 1);
   std::unique_ptr<char> original(new char[kDataSize]);

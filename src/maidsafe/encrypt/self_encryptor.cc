@@ -39,10 +39,12 @@
 #endif
 
 #include "boost/exception/all.hpp"
+
 #include "maidsafe/common/config.h"
-#include "maidsafe/common/error.h"
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/error.h"
+#include "maidsafe/common/identity.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/on_scope_exit.h"
 #include "maidsafe/common/profiler.h"
 #include "maidsafe/common/types.h"
@@ -51,13 +53,12 @@
 #include "maidsafe/encrypt/data_map_encryptor.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/xor.h"
-#include "maidsafe/encrypt/data_map.pb.h"
 
 namespace maidsafe {
 
 namespace encrypt {
 
-SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
+SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer& buffer,
                              std::function<NonEmptyString(const std::string&)> get_from_store)
     : data_map_(data_map),
       kOriginalDataMap_(data_map),
@@ -70,7 +71,7 @@ SelfEncryptor::SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
       data_mutex_() {
   if (!get_from_store) {
     LOG(kError) << "Need to have a non-null get_from_store functor.";
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_parameter));
+    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::invalid_argument));
   }
   auto pos(0);
   if (!data_map_.chunks.empty()) {
@@ -253,8 +254,8 @@ void SelfEncryptor::PrepareWindow(uint32_t length, uint64_t position, bool write
   for (auto i(first_chunk); i < last_chunk; ++i) {
     auto current_chunk_itr = chunks_.find(i);
     if (current_chunk_itr == std::end(chunks_)) {
-      write ? chunks_.insert({i, ChunkStatus::to_be_hashed})
-            : chunks_.insert({i, ChunkStatus::stored});
+      write ? chunks_.insert({i, ChunkStatus::to_be_hashed}) :
+              chunks_.insert({i, ChunkStatus::stored});
     } else {
       auto pos(GetStartEndPositions(i).first);
       if (current_chunk_itr->second == ChunkStatus::remote) {
@@ -296,16 +297,15 @@ ByteVector SelfEncryptor::DecryptChunk(uint32_t chunk_num) {
   try {
     content = get_from_store_(std::string(std::begin(data_map_.chunks[chunk_num].hash),
                                           std::end(data_map_.chunks[chunk_num].hash)));
-  }
-  catch (const std::exception& e) {
+  } catch (const std::exception& e) {
     LOG(kInfo) << boost::diagnostic_information(e);
     throw;
   }
   // asserts on vector sizes
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(&key.data()[0], crypto::AES256_KeySize,
                                                           &iv.data()[0]);
-  CryptoPP::StringSource filter(
-      content.string(), true,
+  CryptoPP::ArraySource filter(
+      content.data(), content.size(), true,
       new XORFilter(new CryptoPP::StreamTransformationFilter(
                         decryptor, new CryptoPP::Gunzip(new CryptoPP::MessageQueue)),
                     &pad.data()[0]));
@@ -348,8 +348,9 @@ void SelfEncryptor::GetPadIvKey(uint32_t chunk_number, ByteVector& key, ByteVect
             std::begin(n_2_pre_hash) + crypto::AES256_KeySize + crypto::AES256_IVSize,
             std::back_inserter(iv));
   // pad
-  assert(kPadSize == (2 * crypto::SHA512::DIGESTSIZE) + crypto::SHA512::DIGESTSIZE -
-                         crypto::AES256_KeySize - crypto::AES256_IVSize &&
+  assert(kPadSize ==
+             (2 * crypto::SHA512::DIGESTSIZE) + crypto::SHA512::DIGESTSIZE -
+                 crypto::AES256_KeySize - crypto::AES256_IVSize &&
          "pad size wrong");
   pad.clear();
   std::copy_n(std::begin(n_1_pre_hash), crypto::SHA512::DIGESTSIZE, std::back_inserter(pad));
@@ -369,16 +370,16 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_
   assert(chunk_n_itr != std::end(chunks_) && "this chunk chunkstatus not found");
 #ifndef NDEBUG
   {
-  std::lock_guard<std::mutex> guard(data_mutex_);
-  assert(data_map_.chunks.size() >= chunk_number);
-  assert(chunks_.size() >= chunk_number);
-  uint32_t n_1_chunk(GetPreviousChunkNumber(chunk_number));
-  uint32_t n_2_chunk(GetPreviousChunkNumber(n_1_chunk));
-  auto chunk_n_1_itr(chunks_.find(n_1_chunk));
-  auto chunk_n_2_itr(chunks_.find(n_2_chunk));
+    std::lock_guard<std::mutex> guard(data_mutex_);
+    assert(data_map_.chunks.size() >= chunk_number);
+    assert(chunks_.size() >= chunk_number);
+    uint32_t n_1_chunk(GetPreviousChunkNumber(chunk_number));
+    uint32_t n_2_chunk(GetPreviousChunkNumber(n_1_chunk));
+    auto chunk_n_1_itr(chunks_.find(n_1_chunk));
+    auto chunk_n_2_itr(chunks_.find(n_2_chunk));
 
-  assert(chunk_n_1_itr->second != ChunkStatus::to_be_hashed && "chunk_n_1 hash invalid");
-  assert(chunk_n_2_itr->second != ChunkStatus::to_be_hashed && "chunk_n_2 hash invalid");
+    assert(chunk_n_1_itr->second != ChunkStatus::to_be_hashed && "chunk_n_1 hash invalid");
+    assert(chunk_n_2_itr->second != ChunkStatus::to_be_hashed && "chunk_n_2 hash invalid");
   }
 #endif
 
@@ -406,7 +407,8 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_number, ByteVector data, uint32_
   CryptoPP::StringSource(chunk_content, true,
                          new CryptoPP::HashFilter(hash, new CryptoPP::StringSink(result)));
 
-  buffer_.Store(result, NonEmptyString(chunk_content));
+  buffer_.Store(DataBuffer::KeyType(Identity(result), DataTypeId(0)),
+                NonEmptyString(chunk_content));
   {
     std::lock_guard<std::mutex> guard(data_mutex_);
     ByteVector tmp2(std::begin(result), std::end(result));
