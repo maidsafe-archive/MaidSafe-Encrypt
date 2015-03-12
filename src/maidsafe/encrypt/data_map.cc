@@ -49,7 +49,7 @@ DataMap::DataMap(DataMap&& other) MAIDSAFE_NOEXCEPT
       chunks(std::move(other.chunks)),
       content(std::move(other.content)) {}
 
-DataMap& DataMap::operator=(DataMap&& other) MAIDSAFE_NOEXCEPT{
+DataMap& DataMap::operator=(DataMap&& other) MAIDSAFE_NOEXCEPT {
   self_encryption_version = std::move(other.self_encryption_version);
   chunks = std::move(other.chunks);
   content = std::move(other.content);
@@ -57,10 +57,9 @@ DataMap& DataMap::operator=(DataMap&& other) MAIDSAFE_NOEXCEPT{
 }
 
 uint64_t DataMap::size() const {
-  return chunks.empty()
-             ? content.size()
-             : static_cast<uint64_t>(chunks[0].size) * (chunks.size() - 2) +
-               (++chunks.rbegin())->size + chunks.rbegin()->size;
+  return chunks.empty() ? content.size() :
+                          static_cast<uint64_t>(chunks[0].size) * (chunks.size() - 2) +
+                              (++chunks.rbegin())->size + chunks.rbegin()->size;
 }
 
 bool DataMap::empty() const { return chunks.empty() && content.empty(); }

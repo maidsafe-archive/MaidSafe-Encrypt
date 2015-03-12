@@ -1253,9 +1253,9 @@ TEST_F(BasicTest, BEH_TruncateIncreaseDecrease) {
     EXPECT_TRUE(self_encryptor.Read(first_read.get(), read_length, read_position));
     for (size_t i = 0; i < read_length; ++i) {
       if ((i + read_position) < self_encryptor.size())
-        ASSERT_EQ(plain_data[read_position + i], first_read[i]) << "not match " << i << " from "
-        << read_position << " when total data is "
-        << self_encryptor.size();
+        ASSERT_EQ(plain_data[read_position + i], first_read[i])
+            << "not match " << i << " from " << read_position << " when total data is "
+            << self_encryptor.size();
     }
     read_position = 24576;
     read_length = 458;
@@ -1263,9 +1263,9 @@ TEST_F(BasicTest, BEH_TruncateIncreaseDecrease) {
     EXPECT_TRUE(self_encryptor.Read(second_read.get(), read_length, read_position));
     for (size_t i = 0; i < read_length; ++i) {
       if ((i + read_position) < self_encryptor.size())
-        ASSERT_EQ(plain_data[read_position + i], second_read[i]) << "not match " << i << " from "
-        << read_position << " when total data is "
-        << self_encryptor.size();
+        ASSERT_EQ(plain_data[read_position + i], second_read[i])
+            << "not match " << i << " from " << read_position << " when total data is "
+            << self_encryptor.size();
     }
     self_encryptor.Close();
   }
@@ -1403,28 +1403,26 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
 }
 
 TEST_F(BasicTest, FUNC_ReadAfterClose) {
-  const std::size_t read_size = 104857;  // 0.1MB
+  const std::size_t read_size = 104857;               // 0.1MB
   const std::string expected(RandomString(8388608));  // 8MB
 
   self_encryptor_->Write(expected.data(), std::uint32_t(expected.size()), 0);
 
   std::string actual;
-  std::size_t read_offset = 209715;  // 0.2MB
+  std::size_t read_offset = 209715;      // 0.2MB
   const std::size_t step_size = 524288;  // 0.5MB
 
   while (read_offset <= expected.size()) {
     self_encryptor_->Close();
-    self_encryptor_ = maidsafe::make_unique<SelfEncryptor>(
-        data_map_, local_store_, get_from_store_);
+    self_encryptor_ =
+        maidsafe::make_unique<SelfEncryptor>(data_map_, local_store_, get_from_store_);
 
     actual.clear();
     actual.resize(read_size);
 
     self_encryptor_->Read(&actual[0], std::uint32_t(actual.size()), read_offset);
-    EXPECT_TRUE(
-        boost::range::equal(
-            expected | boost::adaptors::sliced(read_offset, read_offset + read_size),
-            actual));
+    EXPECT_TRUE(boost::range::equal(
+        expected | boost::adaptors::sliced(read_offset, read_offset + read_size), actual));
 
     read_offset += step_size;
   }

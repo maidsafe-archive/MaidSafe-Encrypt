@@ -37,11 +37,7 @@ using ByteVector = std::vector<byte>;
 enum class EncryptionAlgorithm : uint32_t;
 
 struct ChunkDetails {
-  enum StorageState {
-    kStored,
-    kPending,
-    kUnstored
-  };
+  enum StorageState { kStored, kPending, kUnstored };
   ChunkDetails() : hash(), pre_hash(), storage_state(kUnstored), size(0) {}
   ChunkDetails(const ChunkDetails&) = default;
   ChunkDetails(ChunkDetails&&) MAIDSAFE_NOEXCEPT;

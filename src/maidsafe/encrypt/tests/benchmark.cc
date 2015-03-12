@@ -100,14 +100,12 @@ INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536, 10
 TEST(MassiveFile, FUNC_MemCheck) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path store_path(*test_dir / "data_store");
-  DataBuffer buffer(
-      MemoryUsage(4294967296U),
-      DiskUsage(4294967296U),
-      [](const DataBuffer::KeyType& name, const NonEmptyString&) {
-    LOG(kError) << "Buffer full - deleting " << base64::Substr(name.name);
-    BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
-  },
-    store_path);
+  DataBuffer buffer(MemoryUsage(4294967296U), DiskUsage(4294967296U),
+                    [](const DataBuffer::KeyType& name, const NonEmptyString&) {
+                      LOG(kError) << "Buffer full - deleting " << base64::Substr(name.name);
+                      BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
+                    },
+                    store_path);
 
   DataMap data_map;
   std::unique_ptr<SelfEncryptor> self_encryptor(
