@@ -30,11 +30,6 @@ namespace maidsafe {
 
 namespace encrypt {
 
-enum class EncryptionAlgorithm : uint32_t {
-  kSelfEncryptionVersion0 = 0,
-  kDataMapEncryptionVersion0
-};
-
 extern const EncryptionAlgorithm kSelfEncryptionVersion;
 extern const EncryptionAlgorithm kDataMapEncryptionVersion;
 

@@ -34,7 +34,10 @@ namespace encrypt {
 
 using ByteVector = std::vector<byte>;
 
-enum class EncryptionAlgorithm : uint32_t;
+enum class EncryptionAlgorithm : uint32_t {
+  kSelfEncryptionVersion0 = 0,
+  kDataMapEncryptionVersion0
+};
 
 struct ChunkDetails {
   enum StorageState { kStored, kPending, kUnstored };
