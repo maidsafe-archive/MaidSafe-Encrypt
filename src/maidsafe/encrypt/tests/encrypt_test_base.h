@@ -23,6 +23,7 @@
 #include <string>
 #include <thread>
 
+#include "maidsafe/common/identity.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -39,13 +40,15 @@ class EncryptTestBase {
   explicit EncryptTestBase()
       : test_dir_(maidsafe::test::CreateTestPath()),
         local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
-                     [](const std::string& name, const NonEmptyString&) {
-                       LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
+                     [](const DataBuffer::KeyType& name, const NonEmptyString&) {
+                       LOG(kError) << "Buffer full - deleting " << base64::Substr(name.name);
                        BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
                      },
                      *test_dir_),
         data_map_(),
-        get_from_store_([this](const std::string& name) { return local_store_.Get(name); }),
+        get_from_store_([this](const std::string& name) {
+          return local_store_.Get(DataBuffer::KeyType(Identity(name), DataTypeId(0)));
+        }),
         self_encryptor_(new SelfEncryptor(data_map_, local_store_, get_from_store_)),
         original_(),
         decrypted_() {}
@@ -54,7 +57,7 @@ class EncryptTestBase {
 
  protected:
   maidsafe::test::TestPath test_dir_;
-  DataBuffer<std::string> local_store_;
+  DataBuffer local_store_;
   DataMap data_map_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
   std::unique_ptr<SelfEncryptor> self_encryptor_;

@@ -41,49 +41,37 @@ namespace encrypt {
 
 namespace test {
 
-class PrivateSelfEncryptorTest : public testing::Test {
- public:
-  PrivateSelfEncryptorTest()
-      : test_dir_(maidsafe::test::CreateTestPath()),
-        local_store_(MemoryUsage(1024 * 1024), DiskUsage(4294967296),
-                     [](const std::string& name, const NonEmptyString&) {
-                       LOG(kError) << "Buffer full - deleting " << Base64Substr(name);
-                       BOOST_THROW_EXCEPTION(MakeError(CommonErrors::cannot_exceed_limit));
-                     },
-                     *test_dir_),
-        data_map_(),
-        get_from_store_([this](const std::string& name) { return local_store_.Get(name); }),
-        self_encryptor_(new SelfEncryptor(data_map_, local_store_, get_from_store_)),
-        original_(),
-        decrypted_() {}
-
-  virtual ~PrivateSelfEncryptorTest() = default;
-
+class PrivateSelfEncryptorTest : public EncryptTestBase, public testing::Test {
  protected:
   virtual void TearDown() { self_encryptor_->closed_ = true; }
-  uint64_t size() { return self_encryptor_->file_size_; }
-  size_t ChunksSize() { return self_encryptor_->chunks_.size(); }
-  uint32_t GetChunkSize(uint32_t chunk_num) { return self_encryptor_->GetChunkSize(chunk_num); }
-  uint32_t GetNumChunks() { return self_encryptor_->GetNumChunks(); }
-  std::pair<uint64_t, uint64_t> GetStartEndPositions(uint32_t chunk_number) {
+
+  uint64_t size() const { return self_encryptor_->file_size_; }
+
+  size_t ChunksSize() const { return self_encryptor_->chunks_.size(); }
+
+  uint32_t GetChunkSize(uint32_t chunk_num) const {
+    return self_encryptor_->GetChunkSize(chunk_num);
+  }
+
+  uint32_t GetNumChunks() const { return self_encryptor_->GetNumChunks(); }
+
+  std::pair<uint64_t, uint64_t> GetStartEndPositions(uint32_t chunk_number) const {
     return self_encryptor_->GetStartEndPositions(chunk_number);
   }
-  uint32_t GetNextChunkNumber(uint32_t chunk_number) {
+
+  uint32_t GetNextChunkNumber(uint32_t chunk_number) const {
     return self_encryptor_->GetNextChunkNumber(chunk_number);
   }
-  uint32_t GetPreviousChunkNumber(uint32_t chunk_number) {
+
+  uint32_t GetPreviousChunkNumber(uint32_t chunk_number) const {
     return self_encryptor_->GetPreviousChunkNumber(chunk_number);
   }
 
-  uint32_t GetChunkNumber(uint64_t position) { return self_encryptor_->GetChunkNumber(position); }
+  uint32_t GetChunkNumber(uint64_t position) const {
+    return self_encryptor_->GetChunkNumber(position);
+  }
+
   void SetEncryptorSize(uint64_t size) { self_encryptor_->file_size_ = size; }
-  maidsafe::test::TestPath test_dir_;
-  int num_procs_;
-  DataBuffer<std::string> local_store_;
-  DataMap data_map_;
-  std::function<NonEmptyString(const std::string&)> get_from_store_;
-  std::unique_ptr<SelfEncryptor> self_encryptor_;
-  std::unique_ptr<char[]> original_, decrypted_;
 };
 
 TEST_F(PrivateSelfEncryptorTest, BEH_HelpersSmallfileContentOnly) {

@@ -45,7 +45,7 @@ class PrivateSelfEncryptorTest;
 
 class SelfEncryptor {
  public:
-  SelfEncryptor(DataMap& data_map, DataBuffer<std::string>& buffer,
+  SelfEncryptor(DataMap& data_map, DataBuffer& buffer,
                 std::function<NonEmptyString(const std::string&)> get_from_store);
   ~SelfEncryptor();
   SelfEncryptor(const SelfEncryptor&) = delete;
@@ -100,7 +100,7 @@ class SelfEncryptor {
   DataMap& data_map_, kOriginalDataMap_;
   std::vector<byte> sequencer_;
   std::map<uint32_t, ChunkStatus> chunks_;
-  DataBuffer<std::string>& buffer_;
+  DataBuffer& buffer_;
   std::function<NonEmptyString(const std::string&)> get_from_store_;
   uint64_t file_size_;
   bool closed_;

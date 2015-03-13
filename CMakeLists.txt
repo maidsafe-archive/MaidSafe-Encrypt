@@ -48,13 +48,8 @@ list(REMOVE_ITEM EncryptTestsAllFiles "${PROJECT_SOURCE_DIR}/src/maidsafe/encryp
 # Define MaidSafe libraries and executables                                                        #
 #==================================================================================================#
 ms_add_static_library(maidsafe_encrypt ${EncryptAllFiles})
-target_include_directories(maidsafe_encrypt
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/include
-    ${CMAKE_BINARY_DIR}/GeneratedProtoFiles
-  PRIVATE
-    ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(maidsafe_encrypt maidsafe_common protobuf_lite)
+target_include_directories(maidsafe_encrypt PUBLIC ${PROJECT_SOURCE_DIR}/include PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(maidsafe_encrypt maidsafe_common)
 
 ms_add_executable(benchmark_encrypt "Tests/Encrypt"
                  ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/benchmark.cc
@@ -65,7 +60,7 @@ target_link_libraries(benchmark_encrypt maidsafe_encrypt maidsafe_test)
 if(INCLUDE_TESTS)
   ms_add_executable(test_encrypt "Tests/Encrypt"  ${EncryptTestsAllFiles})
   target_include_directories(test_encrypt PRIVATE ${PROJECT_SOURCE_DIR}/src)
-  target_link_libraries(test_encrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs_client maidsafe_test)
+  target_link_libraries(test_encrypt maidsafe_encrypt maidsafe_test)
 endif()
 
 ms_rename_outdated_built_exes()
